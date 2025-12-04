@@ -224,6 +224,7 @@ def safe_extract_text(response) -> str:
 
 def get_gemini_response(prompt: str, context: str) -> str:
     """Get response from Gemini with robust error handling."""
+    print("🚨 DEBUG: get_gemini_response() called - AI API call happening!")
     try:
         model = get_model()
         
@@ -965,12 +966,14 @@ elif tab_mode == "📊 Analyze":
 
 elif tab_mode == "📚 View Outputs":
     # View Outputs mode
+    st.info("🔍 DEBUG: View Outputs tab loaded - NO AI CALLS will be made here!")
     outputs = get_all_outputs()
     
     if not outputs:
         st.info("📭 No outputs yet. Run some analyses to see them here!")
     else:
         st.subheader("📚 Your Analysis History")
+        st.caption("ℹ️ This tab only reads saved .md files from disk - no AI or tokens used")
         
         # Get selected source from sidebar
         source_files = list(outputs.keys())
