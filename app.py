@@ -805,26 +805,57 @@ with st.sidebar:
             st.warning("No outputs found yet.")
             st.info("Run some analyses first!")
         else:
-            # Source file selector
+            # Source file selector with cleaner display
             source_files = list(outputs.keys())
-            selected_source = st.selectbox("Select Telos file:", source_files)
+            
+            # Create display names (remove timestamps if present)
+            display_names = []
+            for source in source_files:
+                # If it has timestamp pattern, extract just the base name
+                if '_2025-' in source or '_2024-' in source or '_2026-' in source:
+                    # Extract base name before timestamp
+                    base_name = source.split('_202')[0]
+                    display_names.append(f"{base_name}.md")
+                else:
+                    display_names.append(f"{source}.md")
+            
+            selected_display = st.selectbox("📄 Select Telos file:", display_names)
+            selected_source = source_files[display_names.index(selected_display)]
             
             st.markdown("---")
             
-            # Pattern filter
+            # Category-based filter instead of individual patterns
+            st.subheader("🎯 Filter by Category")
+            
+            # Get available categories for this source
             available_patterns = list(outputs[selected_source].keys())
-            pattern_filter = st.multiselect(
-                "Filter by patterns:",
-                available_patterns,
-                default=available_patterns,
-                help="Select which patterns to show"
+            available_categories = []
+            for category, category_patterns in PATTERN_CATEGORIES.items():
+                if any(p in available_patterns for p in category_patterns.keys()):
+                    available_categories.append(category)
+            
+            selected_categories = st.multiselect(
+                "Show categories:",
+                available_categories,
+                default=available_categories,
+                help="Filter which analysis categories to display"
             )
             
             st.markdown("---")
             
+            # Build pattern filter from selected categories
+            pattern_filter = []
+            for category in selected_categories:
+                if category in PATTERN_CATEGORIES:
+                    for pattern_key in PATTERN_CATEGORIES[category].keys():
+                        if pattern_key in available_patterns:
+                            pattern_filter.append(pattern_key)
+            
             # Stats
-            total_analyses = sum(len(outputs[selected_source][p]) for p in pattern_filter)
-            st.metric("Total Analyses", total_analyses)
+            if pattern_filter:
+                total_analyses = sum(len(outputs[selected_source][p]) for p in pattern_filter)
+                st.metric("📊 Total Analyses", total_analyses)
+                st.caption(f"Across {len(pattern_filter)} patterns")
         
         # Set defaults
         run_button = False
