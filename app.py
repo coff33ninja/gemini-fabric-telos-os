@@ -886,6 +886,10 @@ with st.sidebar:
 
 # Main content
 if tab_mode == "✍️ Create New File":
+    # Check for journal entry button press BEFORE creating widgets
+    if 'add_journal_entry' not in st.session_state:
+        st.session_state.add_journal_entry = False
+    
     col1, col2 = st.columns([3, 2])
     
     with col1:
@@ -951,6 +955,15 @@ Daily reflections, thoughts, and observations. Use DD/MM/YYYY format.
 """
                 st.rerun()
         
+        # Check if we need to add journal entry
+        if st.session_state.add_journal_entry:
+            # Get current content
+            current_content = st.session_state.get("telos_editor", "")
+            today = datetime.now().strftime("%d/%m/%Y")
+            journal_template = f"\n\n## LOG (Journal)\n\n- {today}: " if "## LOG" not in current_content else f"\n- {today}: "
+            st.session_state.telos_editor = current_content + journal_template
+            st.session_state.add_journal_entry = False
+        
         # Text editor
         new_content = st.text_area(
             "Content:",
@@ -1008,10 +1021,8 @@ Daily reflections, thoughts, and observations. Use DD/MM/YYYY format.
         
         with col_b:
             if st.button("📝 Add Journal Entry", use_container_width=True):
-                # Add timestamped journal entry template
-                today = datetime.now().strftime("%d/%m/%Y")
-                journal_template = f"\n- {today}: "
-                st.session_state.telos_editor = new_content + journal_template
+                # Set flag to add journal entry on next rerun
+                st.session_state.add_journal_entry = True
                 st.rerun()
         
         st.markdown("---")
