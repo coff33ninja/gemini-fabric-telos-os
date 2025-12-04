@@ -390,16 +390,27 @@ def get_all_outputs():
             filepath = os.path.join(pattern_path, filename)
             
             # Parse filename: source_YYYY-MM-DD_HH-MM-SS.md
+            # Example: test_2025-12-05_00-57-59.md
             try:
-                parts = filename.rsplit('_', 3)
-                if len(parts) >= 4:
+                # Remove .md extension first
+                name_without_ext = filename.replace('.md', '')
+                
+                # Split by underscore to separate source from timestamp
+                # Format: source_YYYY-MM-DD_HH-MM-SS
+                parts = name_without_ext.split('_')
+                
+                if len(parts) >= 3:
+                    # First part is source name
                     source_name = parts[0]
-                    date_str = f"{parts[1]}_{parts[2]}_{parts[3].replace('.md', '')}"
-                    timestamp = datetime.strptime(date_str, "%Y-%m-%d_%H-%M-%S")
+                    # Remaining parts are date and time
+                    date_part = parts[1]  # YYYY-MM-DD
+                    time_part = parts[2]  # HH-MM-SS
+                    timestamp = datetime.strptime(f"{date_part}_{time_part}", "%Y-%m-%d_%H-%M-%S")
                 else:
-                    source_name = filename.replace('.md', '')
+                    source_name = name_without_ext
                     timestamp = datetime.fromtimestamp(os.path.getmtime(filepath))
-            except Exception:
+            except Exception as e:
+                # Fallback: use whole filename as source
                 source_name = filename.replace('.md', '')
                 timestamp = datetime.fromtimestamp(os.path.getmtime(filepath))
             
