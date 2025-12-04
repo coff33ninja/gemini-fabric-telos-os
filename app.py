@@ -1146,9 +1146,20 @@ elif tab_mode == "📚 View Outputs":
         if 'pattern_filter' not in locals():
             pattern_filter = list(outputs[selected_source].keys())
         
+        # Create clean display name
+        if '_2025-' in selected_source or '_2024-' in selected_source or '_2026-' in selected_source:
+            display_name = selected_source.split('_202')[0] + '.md'
+        else:
+            display_name = selected_source + '.md'
+        
         # Header with context
-        st.subheader(f"📚 Analysis History for: {selected_source}.md")
-        st.caption(f"📁 Viewing {len(pattern_filter)} pattern(s) | 💾 Reading saved files only - no AI calls")
+        st.subheader(f"📚 Analysis History for: {display_name}")
+        
+        if len(pattern_filter) > 0:
+            st.caption(f"📁 Viewing {len(pattern_filter)} pattern(s) | 💾 Reading saved files only - no AI calls")
+        else:
+            st.warning("⚠️ No categories selected. Please select at least one category from the sidebar.")
+        
         st.markdown("---")
         
         # Group patterns by category for organized display
@@ -1162,6 +1173,9 @@ elif tab_mode == "📚 View Outputs":
                 patterns_by_category[category] = patterns_in_this_category
         
         # Display analyses grouped by category, then by pattern
+        if not patterns_by_category:
+            st.info("📭 No analyses found for the selected categories. Try selecting different categories or run some analyses first!")
+        
         for category_idx, (category, patterns_in_category) in enumerate(patterns_by_category.items()):
             if category_idx > 0:
                 st.markdown("---")
