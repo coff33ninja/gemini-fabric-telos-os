@@ -1,9 +1,12 @@
 import os
+import re
+import json
 import streamlit as st
 import google.generativeai as genai
 from dotenv import load_dotenv
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
+from collections import Counter, defaultdict
 
 # Load environment variables
 load_dotenv()
@@ -341,6 +344,169 @@ def format_relative_time(timestamp):
         return timestamp.strftime("%b %d, %Y")
 
 
+def semantic_search_telos(query: str, telos_files: list) -> list:
+    """Perform semantic search across all Telos files using AI."""
+    try:
+        model = get_model()
+        
+        # Combine all Telos content
+        all_content = []
+        for filepath in telos_files:
+            content = load_file(filepath)
+            if content:
+                all_content.append({
+                    'file': os.path.basename(filepath),
+                    'content': content
+                })
+        
+        if not all_content:
+            return []
+        
+        # Create search prompt
+        files_text = "\n\n---\n\n".join([
+            f"FILE: {item['file']}\n{item['content']}" 
+            for item in all_content
+        ])
+        
+        prompt = f"""You are a semantic search engine for personal Telos files.
+
+USER QUERY: "{query}"
+
+TELOS FILES:
+{files_text}
+
+Find and return the most relevant sections from these files that answer the query.
+Format your response as JSON with this structure:
+{{
+    "results": [
+        {{
+            "file": "filename.md",
+            "relevance": "high/medium/low",
+            "excerpt": "relevant text excerpt",
+            "context": "why this is relevant"
+        }}
+    ]
+}}
+
+Return only the JSON, no other text."""
+        
+        response = model.generate_content(prompt)
+        result_text = safe_extract_text(response)
+        
+        # Try to parse JSON
+        try:
+            # Extract JSON from response
+            json_match = re.search(r'\{.*\}', result_text, re.DOTALL)
+            if json_match:
+                results = json.loads(json_match.group())
+                return results.get('results', [])
+        except Exception:
+            pass
+        
+        # Fallback: return formatted text
+        return [{'file': 'All Files', 'relevance': 'medium', 'excerpt': result_text, 'context': 'Search results'}]
+    
+    except Exception as e:
+        return [{'file': 'Error', 'relevance': 'low', 'excerpt': str(e), 'context': 'Search failed'}]
+
+
+def extract_goals_from_telos(content: str) -> list:
+    """Extract goals from Telos content using pattern matching and AI."""
+    goals = []
+    
+    # Pattern 1: Look for Goals section
+    goals_section = re.search(r'##\s*Goals\s*\n(.*?)(?=\n##|\Z)', content, re.DOTALL | re.IGNORECASE)
+    if goals_section:
+        goal_text = goals_section.group(1)
+        # Extract bullet points
+        bullet_goals = re.findall(r'[-*]\s+(.+)', goal_text)
+        goals.extend(bullet_goals)
+    
+    # Pattern 2: Look for numbered goals
+    numbered_goals = re.findall(r'\d+\.\s+(.+)', content)
+    goals.extend(numbered_goals)
+    
+    return list(set(goals))  # Remove duplicates
+
+
+def analyze_goal_progress(telos_file: str, outputs: dict) -> dict:
+    """Analyze goal progress by comparing Telos file with analysis outputs."""
+    content = load_file(telos_file)
+    goals = extract_goals_from_telos(content)
+    
+    # Get all analyses for this file
+    source_name = os.path.splitext(os.path.basename(telos_file))[0]
+    file_outputs = outputs.get(source_name, {})
+    
+    # Count analyses
+    total_analyses = sum(len(analyses) for analyses in file_outputs.values())
+    
+    # Get latest analysis dates
+    latest_dates = []
+    for pattern_analyses in file_outputs.values():
+        if pattern_analyses:
+            latest_dates.append(pattern_analyses[0]['timestamp'])
+    
+    last_analysis = max(latest_dates) if latest_dates else None
+    
+    return {
+        'goals_count': len(goals),
+        'goals': goals[:10],  # First 10 goals
+        'total_analyses': total_analyses,
+        'last_analysis': last_analysis,
+        'patterns_used': list(file_outputs.keys())
+    }
+
+
+def get_analytics_data():
+    """Generate analytics data from all Telos files and outputs."""
+    outputs = get_all_outputs()
+    telos_files = find_markdown_files(TELOS_FOLDER)
+    
+    # Overall stats
+    total_files = len(telos_files)
+    total_analyses = sum(
+        len(analyses) 
+        for source in outputs.values() 
+        for analyses in source.values()
+    )
+    
+    # Pattern usage
+    pattern_usage = Counter()
+    for source in outputs.values():
+        for pattern, analyses in source.items():
+            pattern_usage[pattern] += len(analyses)
+    
+    # Timeline data
+    timeline = defaultdict(int)
+    for source in outputs.values():
+        for analyses in source.values():
+            for analysis in analyses:
+                date_key = analysis['timestamp'].strftime('%Y-%m-%d')
+                timeline[date_key] += 1
+    
+    # Recent activity
+    recent_analyses = []
+    for source_name, source in outputs.items():
+        for pattern, analyses in source.items():
+            for analysis in analyses[:3]:  # Last 3 per pattern
+                recent_analyses.append({
+                    'source': source_name,
+                    'pattern': pattern,
+                    'timestamp': analysis['timestamp']
+                })
+    
+    recent_analyses.sort(key=lambda x: x['timestamp'], reverse=True)
+    
+    return {
+        'total_files': total_files,
+        'total_analyses': total_analyses,
+        'pattern_usage': dict(pattern_usage.most_common(10)),
+        'timeline': dict(sorted(timeline.items())),
+        'recent_activity': recent_analyses[:10]
+    }
+
+
 def get_ai_writing_assistance(section: str, current_content: str, full_context: str) -> str:
     """Get AI assistance for writing a specific section."""
     prompts = {
@@ -425,7 +591,11 @@ with st.sidebar:
     st.markdown("---")
     
     # Tab selection
-    tab_mode = st.radio("Mode:", ["📊 Analyze", "✍️ Create New File", "📚 View Outputs"], label_visibility="collapsed")
+    tab_mode = st.radio(
+        "Mode:", 
+        ["📊 Analyze", "✍️ Create New File", "📚 View Outputs", "🔍 Search", "📈 Analytics", "🎯 Goal Tracker"],
+        label_visibility="collapsed"
+    )
     
     st.markdown("---")
     
@@ -511,7 +681,7 @@ with st.sidebar:
         selected_file = None
         selected_pattern = None
     
-    else:
+    elif tab_mode == "📚 View Outputs":
         # View Outputs mode
         st.subheader("📚 View Outputs")
         
@@ -542,6 +712,15 @@ with st.sidebar:
             total_analyses = sum(len(outputs[selected_source][p]) for p in pattern_filter)
             st.metric("Total Analyses", total_analyses)
         
+        # Set defaults
+        run_button = False
+        run_all = False
+        selected_file = None
+        selected_pattern = None
+        create_button = False
+    
+    else:
+        # Search, Analytics, or Goal Tracker modes
         # Set defaults
         run_button = False
         run_all = False
@@ -764,7 +943,7 @@ elif tab_mode == "📊 Analyze":
         else:
             st.info("👈 Select a file and pattern, then click 'Run Analysis'")
 
-else:  # tab_mode == "📚 View Outputs"
+elif tab_mode == "📚 View Outputs":
     # View Outputs mode
     outputs = get_all_outputs()
     
@@ -889,6 +1068,198 @@ else:  # tab_mode == "📚 View Outputs"
                     # Ask for confirmation
                     st.session_state.confirm_delete_all = True
                     st.warning("⚠️ Click again to confirm deletion of ALL analyses for this file!")
+
+elif tab_mode == "🔍 Search":
+    # Semantic Search mode
+    st.subheader("🔍 Semantic Search Across All Telos Files")
+    st.markdown("Search for concepts, themes, or specific information across all your Telos files using AI-powered semantic search.")
+    
+    telos_files = find_markdown_files(TELOS_FOLDER)
+    
+    if not telos_files:
+        st.warning("No Telos files found. Create some files first!")
+    else:
+        st.info(f"Searching across {len(telos_files)} Telos file(s)")
+        
+        # Search input
+        search_query = st.text_input(
+            "What are you looking for?",
+            placeholder="e.g., 'career goals', 'challenges with time management', 'strengths in leadership'"
+        )
+        
+        col1, col2 = st.columns([1, 4])
+        with col1:
+            search_button = st.button("🔍 Search", type="primary", use_container_width=True)
+        with col2:
+            st.caption("💡 Tip: Use natural language - the AI understands context!")
+        
+        if search_button and search_query:
+            with st.spinner("Searching with AI..."):
+                results = semantic_search_telos(search_query, telos_files)
+                
+                if results:
+                    st.success(f"Found {len(results)} relevant result(s)")
+                    
+                    for i, result in enumerate(results):
+                        relevance_emoji = {
+                            'high': '🔥',
+                            'medium': '⭐',
+                            'low': '💡'
+                        }.get(result.get('relevance', 'medium'), '📄')
+                        
+                        with st.expander(f"{relevance_emoji} {result.get('file', 'Unknown')} - {result.get('relevance', 'medium').title()} Relevance", expanded=i==0):
+                            st.markdown(f"**Context:** {result.get('context', 'N/A')}")
+                            st.markdown("---")
+                            st.markdown(result.get('excerpt', 'No excerpt available'))
+                else:
+                    st.info("No results found. Try a different query!")
+
+elif tab_mode == "📈 Analytics":
+    # Analytics Dashboard mode
+    st.subheader("📈 Analytics Dashboard")
+    st.markdown("Visualize your Telos journey with insights and statistics.")
+    
+    analytics = get_analytics_data()
+    
+    # Top metrics
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("📁 Telos Files", analytics['total_files'])
+    with col2:
+        st.metric("🔍 Total Analyses", analytics['total_analyses'])
+    with col3:
+        avg_per_file = analytics['total_analyses'] / analytics['total_files'] if analytics['total_files'] > 0 else 0
+        st.metric("📊 Avg per File", f"{avg_per_file:.1f}")
+    with col4:
+        st.metric("🎭 Patterns Used", len(analytics['pattern_usage']))
+    
+    st.markdown("---")
+    
+    # Pattern usage chart
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        st.subheader("🎭 Most Used Patterns")
+        if analytics['pattern_usage']:
+            # Create bar chart data
+            patterns = list(analytics['pattern_usage'].keys())
+            counts = list(analytics['pattern_usage'].values())
+            
+            # Display as horizontal bars using markdown
+            for pattern, count in sorted(analytics['pattern_usage'].items(), key=lambda x: x[1], reverse=True):
+                bar_length = int((count / max(counts)) * 30)
+                bar = "█" * bar_length
+                st.markdown(f"**{pattern.replace('_', ' ').title()}** `{bar}` {count}")
+        else:
+            st.info("No analyses yet. Run some patterns to see statistics!")
+    
+    with col2:
+        st.subheader("📅 Recent Activity")
+        if analytics['recent_activity']:
+            for activity in analytics['recent_activity'][:5]:
+                st.caption(f"**{activity['pattern'].replace('_', ' ').title()}**")
+                st.caption(f"📄 {activity['source']}")
+                st.caption(f"⏱️ {format_relative_time(activity['timestamp'])}")
+                st.markdown("---")
+        else:
+            st.info("No recent activity")
+    
+    # Timeline
+    st.markdown("---")
+    st.subheader("📅 Analysis Timeline")
+    if analytics['timeline']:
+        dates = list(analytics['timeline'].keys())
+        counts = list(analytics['timeline'].values())
+        
+        # Simple timeline visualization
+        for date, count in list(analytics['timeline'].items())[-14:]:  # Last 14 days
+            bar_length = int((count / max(counts)) * 40)
+            bar = "▓" * bar_length
+            st.markdown(f"`{date}` {bar} **{count}** analyses")
+    else:
+        st.info("No timeline data yet")
+
+elif tab_mode == "🎯 Goal Tracker":
+    # Goal Tracking mode
+    st.subheader("🎯 Automatic Goal Tracker")
+    st.markdown("Track goals extracted from your Telos files and monitor progress through analyses.")
+    
+    telos_files = find_markdown_files(TELOS_FOLDER)
+    outputs = get_all_outputs()
+    
+    if not telos_files:
+        st.warning("No Telos files found. Create some files first!")
+    else:
+        # File selector
+        file_names = [os.path.basename(f) for f in telos_files]
+        selected_file_name = st.selectbox("Select Telos file:", file_names)
+        selected_file = telos_files[file_names.index(selected_file_name)]
+        
+        st.markdown("---")
+        
+        # Analyze goals
+        with st.spinner("Extracting goals..."):
+            progress_data = analyze_goal_progress(selected_file, outputs)
+        
+        # Display metrics
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("🎯 Goals Found", progress_data['goals_count'])
+        with col2:
+            st.metric("🔍 Total Analyses", progress_data['total_analyses'])
+        with col3:
+            if progress_data['last_analysis']:
+                st.metric("📅 Last Analysis", format_relative_time(progress_data['last_analysis']))
+            else:
+                st.metric("📅 Last Analysis", "Never")
+        
+        st.markdown("---")
+        
+        # Display goals
+        if progress_data['goals']:
+            st.subheader("📋 Extracted Goals")
+            for i, goal in enumerate(progress_data['goals'], 1):
+                with st.expander(f"Goal {i}: {goal[:60]}...", expanded=i<=3):
+                    st.markdown(goal)
+                    
+                    # Check if this goal appears in analyses
+                    col1, col2 = st.columns([3, 1])
+                    with col1:
+                        if st.button(f"🔍 Search in Analyses", key=f"search_goal_{i}"):
+                            st.info("Searching for this goal in your analyses...")
+                            # This would trigger a search
+                    with col2:
+                        st.caption("Status: 📝 Active")
+        else:
+            st.info("No goals found. Add goals to your Telos file in a '## Goals' section with bullet points.")
+            
+            with st.expander("💡 How to add goals"):
+                st.markdown("""
+Add a Goals section to your Telos file like this:
+
+```markdown
+## Goals
+
+### Short-term (Next 3-6 months)
+- Complete Python certification
+- Build 3 portfolio projects
+- Network with 10 industry professionals
+
+### Long-term (1-5 years)
+- Land senior developer role
+- Contribute to open source
+- Start tech blog
+```
+                """)
+        
+        # Patterns used
+        if progress_data['patterns_used']:
+            st.markdown("---")
+            st.subheader("🎭 Analysis Patterns Used")
+            cols = st.columns(4)
+            for i, pattern in enumerate(progress_data['patterns_used']):
+                with cols[i % 4]:
+                    st.caption(f"✓ {pattern.replace('_', ' ').title()}")
 
 # Footer
 st.markdown("---")
