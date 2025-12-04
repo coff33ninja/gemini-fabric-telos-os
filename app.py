@@ -1120,14 +1120,31 @@ elif tab_mode == "📚 View Outputs":
         st.caption(f"📁 Viewing {len(pattern_filter)} pattern(s) | 💾 Reading saved files only - no AI calls")
         st.markdown("---")
         
-        # Display analyses grouped by pattern
-        for pattern in pattern_filter:
-            if pattern not in outputs[selected_source]:
-                continue
+        # Group patterns by category for organized display
+        patterns_by_category = {}
+        for category, category_patterns in PATTERN_CATEGORIES.items():
+            patterns_in_this_category = []
+            for pattern_key in category_patterns.keys():
+                if pattern_key in pattern_filter and pattern_key in outputs[selected_source]:
+                    patterns_in_this_category.append(pattern_key)
+            if patterns_in_this_category:
+                patterns_by_category[category] = patterns_in_this_category
+        
+        # Display analyses grouped by category, then by pattern
+        for category_idx, (category, patterns_in_category) in enumerate(patterns_by_category.items()):
+            if category_idx > 0:
+                st.markdown("---")
             
-            analyses = outputs[selected_source][pattern]
+            st.markdown(f"## {category}")
+            st.caption(f"{len(patterns_in_category)} analysis pattern{'s' if len(patterns_in_category) > 1 else ''} in this category")
             
-            with st.expander(f"🎭 {pattern.replace('_', ' ').title()} ({len(analyses)} version{'s' if len(analyses) > 1 else ''})", expanded=True):
+            for pattern in patterns_in_category:
+                if pattern not in outputs[selected_source]:
+                    continue
+                
+                analyses = outputs[selected_source][pattern]
+                
+                with st.expander(f"🎭 {pattern.replace('_', ' ').title()} ({len(analyses)} version{'s' if len(analyses) > 1 else ''})", expanded=False):
                 # Show version selector
                 if len(analyses) > 1:
                     version_options = [
