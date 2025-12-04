@@ -1145,66 +1145,66 @@ elif tab_mode == "📚 View Outputs":
                 analyses = outputs[selected_source][pattern]
                 
                 with st.expander(f"🎭 {pattern.replace('_', ' ').title()} ({len(analyses)} version{'s' if len(analyses) > 1 else ''})", expanded=False):
-                # Show version selector
-                if len(analyses) > 1:
-                    version_options = [
-                        f"Version {i+1} - {format_relative_time(a['timestamp'])} ({a['timestamp'].strftime('%b %d, %I:%M %p')})"
-                        for i, a in enumerate(analyses)
-                    ]
-                    selected_version_idx = st.selectbox(
-                        "Select version:",
-                        range(len(version_options)),
-                        format_func=lambda i: version_options[i],
-                        key=f"version_{pattern}"
-                    )
-                else:
-                    selected_version_idx = 0
-                
-                selected_analysis = analyses[selected_version_idx]
-                
-                # Display metadata with better context
-                st.markdown(f"**📄 Source Telos File:** `{selected_source}.md`")
-                st.markdown(f"**🎭 Analysis Pattern:** `{pattern.replace('_', ' ').title()}`")
-                st.markdown(f"**📅 Generated:** {selected_analysis['timestamp'].strftime('%Y-%m-%d at %I:%M %p')} ({format_relative_time(selected_analysis['timestamp'])})")
-                st.markdown(f"**💾 File:** `{selected_analysis['filename']}`")
-                
-                if len(analyses) > 1:
-                    st.caption(f"📊 Showing version {selected_version_idx + 1} of {len(analyses)}")
-                
-                st.markdown("---")
-                
-                # Load and display content
-                try:
-                    content = load_file(selected_analysis['filepath'])
-                    
-                    # Show content
-                    st.markdown(content)
-                    
-                    # Action buttons
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.download_button(
-                            label="📥 Download",
-                            data=content,
-                            file_name=selected_analysis['filename'],
-                            mime="text/markdown",
-                            key=f"download_{pattern}_{selected_version_idx}"
+                    # Show version selector
+                    if len(analyses) > 1:
+                        version_options = [
+                            f"Version {i+1} - {format_relative_time(a['timestamp'])} ({a['timestamp'].strftime('%b %d, %I:%M %p')})"
+                            for i, a in enumerate(analyses)
+                        ]
+                        selected_version_idx = st.selectbox(
+                            "Select version:",
+                            range(len(version_options)),
+                            format_func=lambda i: version_options[i],
+                            key=f"version_{pattern}"
                         )
-                    with col2:
-                        if st.button("📋 Copy to Clipboard", key=f"copy_{pattern}_{selected_version_idx}"):
-                            st.code(content, language="markdown")
-                            st.success("Content displayed above - copy from the code block")
-                    with col3:
-                        if st.button("🗑️ Delete", key=f"delete_{pattern}_{selected_version_idx}"):
-                            try:
-                                os.remove(selected_analysis['filepath'])
-                                st.success("Deleted! Refresh to update.")
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Error deleting: {e}")
-                
-                except Exception as e:
-                    st.error(f"Error loading file: {e}")
+                    else:
+                        selected_version_idx = 0
+                    
+                    selected_analysis = analyses[selected_version_idx]
+                    
+                    # Display metadata with better context
+                    st.markdown(f"**📄 Source Telos File:** `{selected_source}.md`")
+                    st.markdown(f"**🎭 Analysis Pattern:** `{pattern.replace('_', ' ').title()}`")
+                    st.markdown(f"**📅 Generated:** {selected_analysis['timestamp'].strftime('%Y-%m-%d at %I:%M %p')} ({format_relative_time(selected_analysis['timestamp'])})")
+                    st.markdown(f"**💾 File:** `{selected_analysis['filename']}`")
+                    
+                    if len(analyses) > 1:
+                        st.caption(f"📊 Showing version {selected_version_idx + 1} of {len(analyses)}")
+                    
+                    st.markdown("---")
+                    
+                    # Load and display content
+                    try:
+                        content = load_file(selected_analysis['filepath'])
+                        
+                        # Show content
+                        st.markdown(content)
+                        
+                        # Action buttons
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            st.download_button(
+                                label="📥 Download",
+                                data=content,
+                                file_name=selected_analysis['filename'],
+                                mime="text/markdown",
+                                key=f"download_{pattern}_{selected_version_idx}"
+                            )
+                        with col2:
+                            if st.button("📋 Copy to Clipboard", key=f"copy_{pattern}_{selected_version_idx}"):
+                                st.code(content, language="markdown")
+                                st.success("Content displayed above - copy from the code block")
+                        with col3:
+                            if st.button("🗑️ Delete", key=f"delete_{pattern}_{selected_version_idx}"):
+                                try:
+                                    os.remove(selected_analysis['filepath'])
+                                    st.success("Deleted! Refresh to update.")
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"Error deleting: {e}")
+                    
+                    except Exception as e:
+                        st.error(f"Error loading file: {e}")
         
         # Bulk actions
         st.markdown("---")
