@@ -966,15 +966,11 @@ elif tab_mode == "📊 Analyze":
 
 elif tab_mode == "📚 View Outputs":
     # View Outputs mode
-    st.info("🔍 DEBUG: View Outputs tab loaded - NO AI CALLS will be made here!")
     outputs = get_all_outputs()
     
     if not outputs:
         st.info("📭 No outputs yet. Run some analyses to see them here!")
     else:
-        st.subheader("📚 Your Analysis History")
-        st.caption("ℹ️ This tab only reads saved .md files from disk - no AI or tokens used")
-        
         # Get selected source from sidebar
         source_files = list(outputs.keys())
         if 'selected_source' not in locals():
@@ -984,6 +980,11 @@ elif tab_mode == "📚 View Outputs":
         if 'pattern_filter' not in locals():
             pattern_filter = list(outputs[selected_source].keys())
         
+        # Header with context
+        st.subheader(f"📚 Analysis History for: {selected_source}.md")
+        st.caption(f"📁 Viewing {len(pattern_filter)} pattern(s) | 💾 Reading saved files only - no AI calls")
+        st.markdown("---")
+        
         # Display analyses grouped by pattern
         for pattern in pattern_filter:
             if pattern not in outputs[selected_source]:
@@ -991,7 +992,7 @@ elif tab_mode == "📚 View Outputs":
             
             analyses = outputs[selected_source][pattern]
             
-            with st.expander(f"🎭 {pattern.replace('_', ' ').title()} ({len(analyses)} versions)", expanded=True):
+            with st.expander(f"🎭 {pattern.replace('_', ' ').title()} ({len(analyses)} version{'s' if len(analyses) > 1 else ''})", expanded=True):
                 # Show version selector
                 if len(analyses) > 1:
                     version_options = [
@@ -1009,15 +1010,16 @@ elif tab_mode == "📚 View Outputs":
                 
                 selected_analysis = analyses[selected_version_idx]
                 
-                # Display metadata
-                col1, col2, col3 = st.columns([2, 2, 1])
-                with col1:
-                    st.caption(f"📅 {selected_analysis['timestamp'].strftime('%Y-%m-%d %H:%M:%S')}")
-                with col2:
-                    st.caption(f"⏱️ {format_relative_time(selected_analysis['timestamp'])}")
-                with col3:
-                    if len(analyses) > 1:
-                        st.caption(f"📊 v{selected_version_idx + 1}/{len(analyses)}")
+                # Display metadata with better context
+                st.markdown(f"**📄 Source Telos File:** `{selected_source}.md`")
+                st.markdown(f"**🎭 Analysis Pattern:** `{pattern.replace('_', ' ').title()}`")
+                st.markdown(f"**📅 Generated:** {selected_analysis['timestamp'].strftime('%Y-%m-%d at %I:%M %p')} ({format_relative_time(selected_analysis['timestamp'])})")
+                st.markdown(f"**💾 File:** `{selected_analysis['filename']}`")
+                
+                if len(analyses) > 1:
+                    st.caption(f"📊 Showing version {selected_version_idx + 1} of {len(analyses)}")
+                
+                st.markdown("---")
                 
                 # Load and display content
                 try:
