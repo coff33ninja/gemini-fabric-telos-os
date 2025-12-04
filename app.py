@@ -760,7 +760,7 @@ if tab_mode == "✍️ Create New File":
         # Template helper
         with st.expander("📋 Use Template", expanded=False):
             if st.button("Load Template"):
-                st.session_state.new_content = """# My Telos
+                st.session_state.telos_editor = """# My Telos
 
 ## Mission
 What is your core purpose or mission in life?
@@ -786,11 +786,12 @@ What are your key strengths and resources?
 ## Journal / Notes
 Daily reflections, thoughts, and observations.
 """
+                st.rerun()
         
         # Text editor
         new_content = st.text_area(
             "Content:",
-            value=st.session_state.get("new_content", ""),
+            value="",
             height=500,
             placeholder="Start writing your Telos file here...",
             key="telos_editor"
