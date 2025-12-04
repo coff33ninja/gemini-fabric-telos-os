@@ -222,9 +222,91 @@ def safe_extract_text(response) -> str:
         return f"⚠️ **Could not extract text from response**\n\nError: {str(e)}\n\nFinish reason: {getattr(response.candidates[0], 'finish_reason', 'unknown') if hasattr(response, 'candidates') and response.candidates else 'no candidates'}\n\nTry using a shorter Telos file or a different model."
 
 
+def split_telos_by_sections(content: str) -> list:
+    """Split Telos content by ## sections for processing large files."""
+    sections = []
+    current_section = ""
+    current_header = ""
+    
+    for line in content.split('\n'):
+        if line.startswith('## '):
+            # Save previous section
+            if current_section:
+                sections.append({
+                    'header': current_header,
+                    'content': current_section.strip()
+                })
+            # Start new section
+            current_header = line
+            current_section = line + '\n'
+        else:
+            current_section += line + '\n'
+    
+    # Add last section
+    if current_section:
+        sections.append({
+            'header': current_header,
+            'content': current_section.strip()
+        })
+    
+    return sections
+
+
+def estimate_tokens(text: str) -> int:
+    """Rough estimate of tokens (1 token ≈ 4 characters)."""
+    return len(text) // 4
+
+
 def get_gemini_response(prompt: str, context: str) -> str:
-    """Get response from Gemini with robust error handling."""
+    """Get response from Gemini with robust error handling and automatic splitting for large files."""
     print("🚨 DEBUG: get_gemini_response() called - AI API call happening!")
+    
+    # Check if context is too large (rough estimate: 30K tokens = 120K chars for input)
+    estimated_tokens = estimate_tokens(context)
+    max_input_tokens = 30000  # Conservative limit for gemini-1.5-pro
+    
+    if estimated_tokens > max_input_tokens:
+        # Split by sections and analyze separately
+        st.info(f"📊 Large file detected (~{estimated_tokens:,} tokens). Splitting into sections for analysis...")
+        sections = split_telos_by_sections(context)
+        
+        results = []
+        for i, section in enumerate(sections, 1):
+            st.caption(f"Analyzing section {i}/{len(sections)}: {section['header']}")
+            
+            section_prompt = f"""
+{prompt}
+
+**Note:** This is section {i} of {len(sections)} from a larger Telos document.
+
+--- SECTION CONTENT ---
+{section['content']}
+"""
+            try:
+                model = get_model()
+                response = model.generate_content(
+                    section_prompt,
+                    generation_config=genai.types.GenerationConfig(
+                        temperature=0.7,
+                        max_output_tokens=4096,
+                        candidate_count=1,
+                    ),
+                    safety_settings=[
+                        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+                    ]
+                )
+                results.append(f"### {section['header']}\n\n{safe_extract_text(response)}")
+            except Exception as e:
+                results.append(f"### {section['header']}\n\n❌ Error: {str(e)}")
+        
+        # Combine results
+        combined = "# Analysis Results (Processed in Sections)\n\n" + "\n\n---\n\n".join(results)
+        return combined
+    
+    # Normal processing for smaller files
     try:
         model = get_model()
         
@@ -239,7 +321,7 @@ def get_gemini_response(prompt: str, context: str) -> str:
             full_prompt,
             generation_config=genai.types.GenerationConfig(
                 temperature=0.7,
-                max_output_tokens=8192,  # Increased from 2048 to allow longer responses
+                max_output_tokens=8192,
                 candidate_count=1,
             ),
             safety_settings=[
