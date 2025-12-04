@@ -214,9 +214,25 @@ MIT License - feel free to use this for personal or commercial projects.
 
 ## 🙏 Acknowledgments
 
-- Built with [Streamlit](https://streamlit.io)
-- Powered by [Google Gemini](https://ai.google.dev/)
-- Inspired by the concept of Telos (Greek: τέλος) - ultimate purpose
+This project stands on the shoulders of giants:
+
+### 🎬 Inspiration
+- **[NetworkChuck](https://www.youtube.com/@NetworkChuck)** - For the incredible video ["got AI anxiety? Do this RIGHT NOW!"](https://www.youtube.com/watch?v=3BXE0e3QZ4U) that introduced the Telos file concept to the world. His vision of using AI to "red team" your life and find blind spots sparked this entire project.
+
+### 🧠 Original Concept
+- **[Daniel Miessler](https://github.com/danielmiessler)** - Creator of the original [Telos framework](https://github.com/danielmiessler/Telos). His pioneering work on personal operating systems and the Fabric project laid the foundation for this tool.
+
+### 🛠️ Technology
+- **[Streamlit](https://streamlit.io)** - For making beautiful web apps ridiculously easy
+- **[Google Gemini](https://ai.google.dev/)** - For powerful, accessible AI that makes deep analysis possible
+- **The Open Source Community** - For building the tools that make projects like this possible
+
+### 💡 Philosophy
+The concept of **Telos** (Greek: τέλος) - meaning "purpose" or "end goal" - reminds us that understanding our ultimate purpose is the first step to living intentionally in an AI-driven world.
+
+> "You can't know where you're going until you look at where you've been." - NetworkChuck
+
+This tool is our contribution to making that journey easier for everyone.
 
 ---
 
