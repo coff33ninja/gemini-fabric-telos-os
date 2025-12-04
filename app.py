@@ -4,7 +4,7 @@ import json
 import streamlit as st
 import google.generativeai as genai
 from dotenv import load_dotenv
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from collections import Counter, defaultdict
 
@@ -193,20 +193,33 @@ def get_model():
 def safe_extract_text(response) -> str:
     """Safely extract text from Gemini response with multiple fallback methods."""
     try:
-        # Method 1: Direct .text attribute (most common)
-        if hasattr(response, "text") and response.text:
-            return response.text
-        
-        # Method 2: Extract from candidates
-        if hasattr(response, "candidates") and response.candidates:
-            parts = response.candidates[0].content.parts
-            return "".join(part.text for part in parts if hasattr(part, "text"))
-        
-        # Method 3: Try to convert to string
-        return str(response)
-    
+        return response.text
     except Exception as e:
-        return f"⚠️ Response extraction error: {str(e)}\n\nRaw response: {response}"
+        # If .text fails, inspect the candidates.
+        if hasattr(response, "candidates") and response.candidates:
+            candidate = response.candidates[0]
+            
+            # If there's content in parts, return it, even if truncated.
+            if candidate.content and candidate.content.parts:
+                text = "".join(part.text for part in candidate.content.parts if hasattr(part, "text"))
+                if text:  # If we got some text
+                    if candidate.finish_reason == 2 or candidate.finish_reason == 'MAX_TOKENS':
+                        return text + "\n\n✂️ **Response truncated due to maximum token limit.**\n\n💡 *Tip: Try using a shorter Telos file or run a more focused analysis pattern.*"
+                    return text
+
+            # If no content, explain why based on finish_reason
+            finish_reason = candidate.finish_reason
+            if finish_reason == 2 or finish_reason == 'MAX_TOKENS':
+                return "⚠️ **Response Truncated**\n\nThe response was cut off because it reached the maximum token limit and returned no content.\n\n**Possible solutions:**\n- Your Telos file might be too long. Try splitting it into smaller sections.\n- The analysis pattern generated too much output. Try a different pattern.\n- Consider using a model with higher token limits (e.g., gemini-1.5-pro)."
+            if finish_reason == 3 or finish_reason == 'SAFETY':
+                return "� ️ **Safety Filter Triggered**\n\nThe AI declined to respond due to safety settings. Try rephrasing your content."
+            if finish_reason == 4 or finish_reason == 'RECITATION':
+                return "📋 **Recitation Blocked**\n\nThe response was blocked for potential recitation of copyrighted material."
+            if finish_reason == 5 or finish_reason == 'OTHER':
+                return f"⚠️ **Unknown Error**\n\nFinish reason: {finish_reason}\n\nTry running the analysis again or use a different pattern."
+
+        # If we still can't figure it out, show a generic error
+        return f"⚠️ **Could not extract text from response**\n\nError: {str(e)}\n\nFinish reason: {getattr(response.candidates[0], 'finish_reason', 'unknown') if hasattr(response, 'candidates') and response.candidates else 'no candidates'}\n\nTry using a shorter Telos file or a different model."
 
 
 def get_gemini_response(prompt: str, context: str) -> str:
@@ -225,8 +238,15 @@ def get_gemini_response(prompt: str, context: str) -> str:
             full_prompt,
             generation_config=genai.types.GenerationConfig(
                 temperature=0.7,
-                max_output_tokens=2048,
-            )
+                max_output_tokens=8192,  # Increased from 2048 to allow longer responses
+                candidate_count=1,
+            ),
+            safety_settings=[
+                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+            ]
         )
         
         return safe_extract_text(response)
@@ -1225,7 +1245,7 @@ elif tab_mode == "🎯 Goal Tracker":
                     # Check if this goal appears in analyses
                     col1, col2 = st.columns([3, 1])
                     with col1:
-                        if st.button(f"🔍 Search in Analyses", key=f"search_goal_{i}"):
+                        if st.button("🔍 Search in Analyses", key=f"search_goal_{i}"):
                             st.info("Searching for this goal in your analyses...")
                             # This would trigger a search
                     with col2:
