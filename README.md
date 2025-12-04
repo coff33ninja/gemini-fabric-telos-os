@@ -15,23 +15,47 @@ AI-powered life context analyzer using Google Gemini. Analyze, track, and evolve
 
 ## 🚀 Quick Start
 
-### 1. Install Dependencies
+### Option 1: One-Click Launcher (Windows - Recommended)
+
+1. **Install UV** (fast Python package manager):
+   ```powershell
+   powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+   ```
+
+2. **Create `.env` file** with your Gemini API key:
+   ```
+   GEMINI_API_KEY=your_api_key_here
+   ```
+
+3. **Double-click `run.bat`** - That's it! 🎉
+
+The launcher will:
+- ✅ Check for UV installation
+- ✅ Create virtual environment if needed
+- ✅ Install all dependencies automatically
+- ✅ Launch the Streamlit app
+
+**Quick restart:** Use `start.bat` for faster launches after first setup.
+
+### Option 2: Manual Setup
+
+#### 1. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Setup
+#### 2. Setup
 
 Create a `.env` file with your Gemini API key (or copy from `.env.example`):
 
 ```
 GEMINI_API_KEY=your_api_key_here
-GEMINI_MODEL=gemini-2.5-flash
+GEMINI_MODEL=gemini-1.5-pro
 TELOS_FOLDER=telos
 ```
 
-### 3. Run the Web UI
+#### 3. Run the Web UI
 
 ```bash
 streamlit run app.py
