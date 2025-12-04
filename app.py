@@ -564,6 +564,20 @@ def get_ai_writing_assistance(section: str, current_content: str, full_context: 
             "3) Actionability - are there concrete next steps? "
             "Provide 3-5 specific suggestions for improvement."
         ),
+        "analyze_expand": (
+            "You are a Telos expert. Analyze the user's current Telos document and provide: "
+            "1) What's working well (2-3 strengths), "
+            "2) What's missing or underdeveloped (2-3 gaps), "
+            "3) Specific suggestions to expand and deepen each section, "
+            "4) How to better connect Problems → Mission → Goals → Challenges. "
+            "Be specific and actionable. Reference their actual content."
+        ),
+        "connect": (
+            "You are a systems thinker. Analyze how the user's Problems, Mission, Goals, and Challenges "
+            "connect to each other. Show the logical flow: which goals address which problems? "
+            "Which challenges block which goals? Are there gaps in the chain? "
+            "Provide a clear map of connections and suggest missing links."
+        ),
     }
     
     prompt = prompts.get(section, prompts["expand"])
@@ -574,13 +588,10 @@ def get_ai_writing_assistance(section: str, current_content: str, full_context: 
         full_prompt = f"""
 {prompt}
 
---- CURRENT SECTION CONTENT ---
-{current_content if current_content else "[Empty - user hasn't written this section yet]"}
-
---- FULL TELOS CONTEXT ---
+--- USER'S TELOS DOCUMENT ---
 {full_context if full_context else "[User is just starting their Telos]"}
 
-Provide helpful, actionable guidance. Be concise but insightful.
+Provide helpful, actionable guidance. Be concise but insightful. Use markdown formatting.
 """
         
         response = model.generate_content(full_prompt)
@@ -829,65 +840,78 @@ Daily reflections, thoughts, and observations.
     
     with col2:
         st.subheader("🤖 AI Writing Assistant")
-        st.markdown("Get AI help to write better Telos content.")
+        st.markdown("AI analyzes your Telos and suggests improvements.")
         
-        # AI assistance options
+        # Quick actions
+        col_a, col_b = st.columns(2)
+        with col_a:
+            if st.button("🔍 Analyze & Expand", use_container_width=True, type="primary"):
+                if new_content.strip():
+                    with st.spinner("Analyzing your Telos..."):
+                        suggestions = get_ai_writing_assistance("analyze_expand", "", new_content)
+                        st.markdown("### 💭 AI Analysis")
+                        st.markdown(suggestions)
+                else:
+                    st.warning("Write some content first!")
+        
+        with col_b:
+            if st.button("📝 Add Journal Entry", use_container_width=True):
+                # Add timestamped journal entry template
+                today = datetime.now().strftime("%d/%m/%Y")
+                journal_template = f"\n- {today}: "
+                st.session_state.telos_editor = new_content + journal_template
+                st.rerun()
+        
+        st.markdown("---")
+        
+        # Specific assistance
         assist_type = st.selectbox(
-            "What do you need help with?",
+            "Or get specific help:",
             [
-                "💡 Expand & Deepen",
-                "🎯 Mission Statement",
-                "📊 Goal Setting",
-                "🚧 Identify Challenges",
-                "💪 Discover Strengths",
-                "✨ Improve & Refine"
+                "💡 Expand & Deepen Current Content",
+                "🎯 Refine Mission Statement",
+                "📊 Set SMART Goals",
+                "🚧 Identify Hidden Challenges",
+                "💪 Discover Your Strengths",
+                "✨ Overall Improvement Suggestions",
+                "🔗 Connect Sections (Problems → Goals)"
             ]
         )
         
         # Map display to internal keys
         assist_map = {
-            "💡 Expand & Deepen": "expand",
-            "🎯 Mission Statement": "mission",
-            "📊 Goal Setting": "goals",
-            "🚧 Identify Challenges": "challenges",
-            "💪 Discover Strengths": "strengths",
-            "✨ Improve & Refine": "improve"
+            "💡 Expand & Deepen Current Content": "expand",
+            "🎯 Refine Mission Statement": "mission",
+            "📊 Set SMART Goals": "goals",
+            "🚧 Identify Hidden Challenges": "challenges",
+            "💪 Discover Your Strengths": "strengths",
+            "✨ Overall Improvement Suggestions": "improve",
+            "🔗 Connect Sections (Problems → Goals)": "connect"
         }
         
-        selected_section = st.text_area(
-            "Paste the section you want help with (optional):",
-            height=100,
-            placeholder="Leave empty to get help based on your full Telos...",
-            key="section_input"
-        )
-        
-        if st.button("✨ Get AI Suggestions", type="primary", use_container_width=True):
-            with st.spinner("Thinking..."):
-                section_key = assist_map[assist_type]
-                current_content = new_content if new_content else ""
-                section_content = selected_section if selected_section else ""
-                
-                suggestions = get_ai_writing_assistance(
-                    section_key,
-                    section_content,
-                    current_content
-                )
-                
-                st.markdown("### 💭 AI Suggestions")
-                st.markdown(suggestions)
-                
-                # Store in session state for reference
-                if "ai_suggestions" not in st.session_state:
-                    st.session_state.ai_suggestions = []
-                st.session_state.ai_suggestions.append({
-                    "type": assist_type,
-                    "content": suggestions,
-                    "timestamp": datetime.now().strftime("%H:%M:%S")
-                })
+        if st.button("✨ Get Suggestions", use_container_width=True):
+            if new_content.strip():
+                with st.spinner("Thinking..."):
+                    section_key = assist_map[assist_type]
+                    suggestions = get_ai_writing_assistance(section_key, "", new_content)
+                    
+                    st.markdown("### 💭 AI Suggestions")
+                    st.markdown(suggestions)
+                    
+                    # Store in session state
+                    if "ai_suggestions" not in st.session_state:
+                        st.session_state.ai_suggestions = []
+                    st.session_state.ai_suggestions.append({
+                        "type": assist_type,
+                        "content": suggestions,
+                        "timestamp": datetime.now().strftime("%H:%M:%S")
+                    })
+            else:
+                st.warning("Write some content first!")
         
         # Show suggestion history
         if "ai_suggestions" in st.session_state and st.session_state.ai_suggestions:
-            with st.expander("📜 Suggestion History", expanded=False):
+            with st.expander("📜 Recent Suggestions", expanded=False):
                 for i, suggestion in enumerate(reversed(st.session_state.ai_suggestions[-5:])):
                     st.caption(f"**{suggestion['type']}** - {suggestion['timestamp']}")
                     st.markdown(suggestion['content'])
