@@ -773,29 +773,57 @@ if tab_mode == "✍️ Create New File":
             if st.button("Load Template"):
                 st.session_state.telos_editor = """# My Telos
 
-## Mission
-What is your core purpose or mission in life?
+## PROBLEMS
+What current pains, inefficiencies, or negative states do I observe in my life or environment that I feel driven to change or solve?
 
-## Current Status
-Where are you right now? What's your current situation?
+- P1: 
+- P2: 
 
-## Goals
+## MISSION
+What is your core purpose or mission in life? (This should address the problems above)
+
+- M1: 
+
+## NARRATIVES
+How do you describe yourself and your mission to others?
+
+- N1: 
+
+## GOALS
+What specific, measurable outcomes will move you toward your mission?
+
 ### Short-term (Next 3-6 months)
-- Goal 1
-- Goal 2
+- G1: 
+- G2: 
 
 ### Long-term (1-5 years)
-- Goal 1
-- Goal 2
+- G3: 
+- G4: 
 
-## Challenges
-What obstacles are you facing?
+## CHALLENGES
+What obstacles currently stand between you and your goals?
 
-## Strengths
-What are your key strengths and resources?
+- C1: 
+- C2: 
 
-## Journal / Notes
-Daily reflections, thoughts, and observations.
+## STRENGTHS
+What are your key strengths, skills, and resources?
+
+- S1: 
+- S2: 
+
+## CURRENT STATUS
+Where are you right now across key life domains?
+
+- Career: 
+- Health: 
+- Relationships: 
+- Finances: 
+
+## LOG (Journal)
+Daily reflections, thoughts, and observations. Use DD/MM/YYYY format.
+
+- """ + datetime.now().strftime("%d/%m/%Y") + """: 
 """
                 st.rerun()
         
