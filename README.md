@@ -1,8 +1,17 @@
-# Gemini Fabric - Telos OS
+# 🧠 Gemini Fabric - Telos OS
 
 **Your Personal Operating System for Life**
 
-AI-powered life context analyzer using Google Gemini. Analyze, track, and evolve your Telos files with expert AI personas through a beautiful web interface.
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Streamlit](https://img.shields.io/badge/streamlit-1.28+-red.svg)](https://streamlit.io)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Google Gemini](https://img.shields.io/badge/Powered%20by-Google%20Gemini-4285F4)](https://ai.google.dev/)
+
+AI-powered life context analyzer using Google Gemini. Analyze, track, and evolve your Telos files with 20+ expert AI personas through a beautiful web interface.
+
+![Telos OS Screenshot](https://via.placeholder.com/800x400/1a1a2e/eee?text=Telos+OS+Dashboard)
+
+---
 
 ## 🚀 Quick Start
 
@@ -155,6 +164,7 @@ Check the **"🔥 Run ALL patterns"** checkbox to run all 20+ patterns on your f
 **No API Key Error:**
 - Make sure `.env` file exists with `GEMINI_API_KEY=your_key`
 - Copy `.env.example` to `.env` and add your key
+- Get a free API key at [Google AI Studio](https://makersuite.google.com/app/apikey)
 
 **Port Already in Use:**
 - Streamlit default port is 8501
@@ -163,6 +173,10 @@ Check the **"🔥 Run ALL patterns"** checkbox to run all 20+ patterns on your f
 **Module Not Found:**
 - Run `pip install -r requirements.txt`
 - Make sure your virtual environment is activated
+
+**API Rate Limits:**
+- Free tier: 60 requests per minute
+- If you hit limits, wait a moment or upgrade your API plan
 
 ## 🎨 Future Ideas
 
@@ -173,6 +187,9 @@ Want to extend this? Potential features:
 - 🤖 Custom AI patterns/personas
 - 🔗 Integration with productivity tools
 - 🧠 Semantic search across all Telos files
+- 📊 Visual analytics dashboard
+- 🔄 Automatic goal tracking
+- 🌐 Multi-language support
 
 ## 🧠 Philosophy
 
@@ -182,6 +199,29 @@ Your brain's data → structured Telos → analyzed → improved → version con
 
 This is cybernetic self-engineering. Track your evolution. Optimize your existence.
 
+## 🤝 Contributing
+
+Contributions are welcome! Feel free to:
+- 🐛 Report bugs
+- 💡 Suggest new AI personas/patterns
+- 🔧 Submit pull requests
+- 📖 Improve documentation
+- ⭐ Star the repo if you find it useful!
+
+## 📄 License
+
+MIT License - feel free to use this for personal or commercial projects.
+
+## 🙏 Acknowledgments
+
+- Built with [Streamlit](https://streamlit.io)
+- Powered by [Google Gemini](https://ai.google.dev/)
+- Inspired by the concept of Telos (Greek: τέλος) - ultimate purpose
+
 ---
 
-Built with ❤️ using Streamlit & Google Gemini
+**Built with ❤️ by the community**
+
+*A mind-weapon for self-awareness* 🧠⚔️
+
+[⭐ Star on GitHub](https://github.com/coff33ninja/gemini-fabric-telos-os) | [🐛 Report Bug](https://github.com/coff33ninja/gemini-fabric-telos-os/issues) | [💡 Request Feature](https://github.com/coff33ninja/gemini-fabric-telos-os/issues)
