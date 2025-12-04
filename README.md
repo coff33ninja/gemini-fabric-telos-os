@@ -17,23 +17,23 @@ AI-powered life context analyzer using Google Gemini. Analyze, track, and evolve
 
 ### Option 1: One-Click Launcher (Windows - Recommended)
 
-1. **Install UV** (fast Python package manager):
-   ```powershell
-   powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
-   ```
-
-2. **Create `.env` file** with your Gemini API key:
+1. **Create `.env` file** with your Gemini API key:
    ```
    GEMINI_API_KEY=your_api_key_here
    ```
 
-3. **Double-click `run.bat`** - That's it! 🎉
+2. **Double-click `run.bat`** - That's it! 🎉
 
-The launcher will:
-- ✅ Check for UV installation
-- ✅ Create virtual environment if needed
-- ✅ Install all dependencies automatically
+The launcher will automatically:
+- ✅ Detect or create virtual environment (`.venv`)
+- ✅ Install UV if needed (or use pip as fallback)
+- ✅ Install all dependencies
 - ✅ Launch the Streamlit app
+
+**Three ways to use UV:**
+- **System-wide:** `powershell -c "irm https://astral.sh/uv/install.ps1 | iex"`
+- **In existing venv:** Activate your venv, then `pip install uv`
+- **No UV:** The launcher will use pip automatically
 
 **Quick restart:** Use `start.bat` for faster launches after first setup.
 

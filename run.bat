@@ -1,47 +1,81 @@
 @echo off
 REM Gemini Fabric Telos OS - Launcher Script
-REM Uses UV for fast Python environment management
+REM Supports both UV (system-wide) and pip (venv) installations
 
 echo ========================================
 echo   Gemini Fabric - Telos OS Launcher
 echo ========================================
 echo.
 
-REM Check if uv is installed
-where uv >nul 2>nul
-if %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] UV is not installed!
-    echo.
-    echo Please install UV first:
-    echo   - Windows: powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
-    echo   - Or visit: https://docs.astral.sh/uv/getting-started/installation/
-    echo.
-    pause
-    exit /b 1
-)
-
-echo [1/4] Checking UV installation...
-uv --version
-echo.
-
 REM Check if .venv exists
 if exist ".venv\" (
-    echo [2/4] Virtual environment found at .venv
-) else (
-    echo [2/4] Creating virtual environment with UV...
-    uv venv
-    if %ERRORLEVEL% NEQ 0 (
-        echo [ERROR] Failed to create virtual environment
-        pause
-        exit /b 1
+    echo [1/4] Virtual environment found at .venv
+    
+    REM Check if UV is available in venv
+    if exist ".venv\Scripts\uv.exe" (
+        echo [2/4] Using UV from virtual environment...
+        call .venv\Scripts\activate.bat
+        uv --version
+    ) else (
+        REM Check if UV is available system-wide
+        where uv >nul 2>nul
+        if %ERRORLEVEL% EQU 0 (
+            echo [2/4] Using system UV...
+            uv --version
+        ) else (
+            echo [2/4] UV not found, using pip...
+            call .venv\Scripts\activate.bat
+            python --version
+        )
     )
-    echo     Virtual environment created successfully!
+) else (
+    REM No venv exists - check for UV to create one
+    where uv >nul 2>nul
+    if %ERRORLEVEL% EQU 0 (
+        echo [1/4] Creating virtual environment with UV...
+        uv venv
+        if %ERRORLEVEL% NEQ 0 (
+            echo [ERROR] Failed to create virtual environment
+            pause
+            exit /b 1
+        )
+        echo     Virtual environment created successfully!
+        echo [2/4] UV ready
+        uv --version
+    ) else (
+        echo [1/4] Creating virtual environment with Python...
+        python -m venv .venv
+        if %ERRORLEVEL% NEQ 0 (
+            echo [ERROR] Failed to create virtual environment
+            pause
+            exit /b 1
+        )
+        echo     Virtual environment created successfully!
+        call .venv\Scripts\activate.bat
+        echo [2/4] Installing UV in virtual environment...
+        pip install uv
+        if %ERRORLEVEL% NEQ 0 (
+            echo [WARNING] Failed to install UV, will use pip instead
+        )
+    )
 )
 echo.
 
-REM Activate virtual environment and install/sync dependencies
-echo [3/4] Installing dependencies with UV...
-uv pip install -r requirements.txt
+REM Install dependencies
+echo [3/4] Installing dependencies...
+if exist ".venv\Scripts\uv.exe" (
+    call .venv\Scripts\activate.bat
+    uv pip install -r requirements.txt
+) else (
+    where uv >nul 2>nul
+    if %ERRORLEVEL% EQU 0 (
+        uv pip install -r requirements.txt
+    ) else (
+        call .venv\Scripts\activate.bat
+        pip install -r requirements.txt
+    )
+)
+
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Failed to install dependencies
     pause
@@ -71,7 +105,18 @@ echo   Press Ctrl+C to stop the server
 echo ========================================
 echo.
 
-uv run streamlit run app.py
+REM Activate venv if not already active
+if not defined VIRTUAL_ENV (
+    call .venv\Scripts\activate.bat
+)
+
+REM Run with UV if available, otherwise use python directly
+where uv >nul 2>nul
+if %ERRORLEVEL% EQU 0 (
+    uv run streamlit run app.py
+) else (
+    python -m streamlit run app.py
+)
 
 REM If streamlit exits, pause so user can see any errors
 if %ERRORLEVEL% NEQ 0 (
