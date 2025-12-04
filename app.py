@@ -1137,14 +1137,14 @@ elif tab_mode == "📚 View Outputs":
     if not outputs:
         st.info("📭 No outputs yet. Run some analyses to see them here!")
     else:
-        # Get selected source from sidebar
-        source_files = list(outputs.keys())
-        if 'selected_source' not in locals():
-            selected_source = source_files[0]
+        # DEBUG: Show what we found
+        st.write(f"🔍 DEBUG: Found {len(outputs)} source file(s)")
+        for source_name, patterns in outputs.items():
+            st.write(f"  - Source: '{source_name}' has {len(patterns)} patterns: {list(patterns.keys())}")
         
-        # Get pattern filter from sidebar
-        if 'pattern_filter' not in locals():
-            pattern_filter = list(outputs[selected_source].keys())
+        st.write(f"🔍 DEBUG: selected_source = '{selected_source}'")
+        st.write(f"🔍 DEBUG: pattern_filter = {pattern_filter}")
+        st.write(f"🔍 DEBUG: Available patterns for '{selected_source}': {list(outputs[selected_source].keys())}")
         
         # Create clean display name
         if '_2025-' in selected_source or '_2024-' in selected_source or '_2026-' in selected_source:
