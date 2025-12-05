@@ -257,103 +257,159 @@ def estimate_tokens(text: str) -> int:
     return len(text) // 3  # More conservative: 1 token per 3 chars
 
 
+def split_context_into_chunks(context: str, chunk_size: int = 5000) -> list[dict]:
+    """
+    Split context into intelligently sized chunks, preferring section boundaries.
+    Returns list of chunks with headers for continuity.
+    """
+    if len(context) <= chunk_size:
+        return [{"header": "Full Context", "content": context, "is_partial": False}]
+    
+    chunks = []
+    sections = split_telos_by_sections(context)
+    current_chunk = ""
+    chunk_header = ""
+    
+    for section in sections:
+        section_with_header = f"{section['header']}\n\n{section['content']}"
+        
+        # If adding this section would exceed chunk_size, save current chunk
+        if len(current_chunk) + len(section_with_header) > chunk_size and current_chunk:
+            chunks.append({
+                "header": chunk_header or "Context Chunk",
+                "content": current_chunk.strip(),
+                "is_partial": True
+            })
+            current_chunk = section_with_header
+            chunk_header = section['header']
+        else:
+            if not chunk_header:
+                chunk_header = section['header']
+            current_chunk += (section_with_header + "\n\n")
+    
+    # Add remaining content
+    if current_chunk:
+        chunks.append({
+            "header": chunk_header or "Final Chunk",
+            "content": current_chunk.strip(),
+            "is_partial": False
+        })
+    
+    return chunks
+
+
 def get_gemini_response(prompt: str, context: str) -> str:
-    """Get response from Gemini with robust error handling and automatic splitting for large files."""
+    """
+    Get response from Gemini by feeding context in intelligent chunks.
+    Uses chunking approach similar to section analysis for better token handling.
+    Always uses gemini-2.5-flash (no fallback models).
+    """
     print("🚨 DEBUG: get_gemini_response() called - AI API call happening!")
     
-    # ALWAYS trim context aggressively to avoid truncation
-    # Max context size: 8000 chars (~2667 tokens)
-    max_context_chars = 8000
-    if len(context) > max_context_chars:
-        context = context[:max_context_chars] + "\n\n[...content trimmed due to length...]"
-    
-    # Check if context is too large for splitting approach
     estimated_tokens = estimate_tokens(context)
-    max_input_tokens = 8000  # Even more conservative
+    max_single_request_tokens = 6000  # Conservative for gemini-2.5-flash
     
-    if estimated_tokens > max_input_tokens:
-        # Split by sections and analyze separately
-        st.info(f"📊 Large file detected (~{estimated_tokens:,} tokens). Splitting into sections for analysis...")
-        sections = split_telos_by_sections(context)
-        
-        results = []
-        for i, section in enumerate(sections, 1):
-            st.caption(f"Analyzing section {i}/{len(sections)}: {section['header']}")
+    # If context is small enough, send directly
+    if estimated_tokens <= max_single_request_tokens:
+        try:
+            model = get_model()
             
-            # Aggressively trim each section
-            section_content = section['content']
-            if len(section_content) > 6000:
-                section_content = section_content[:6000] + "\n\n[...trimmed...]"
-            
-            section_prompt = f"""{prompt}
-
-**Note:** Section {i}/{len(sections)}
-
-{section_content}
-"""
-            try:
-                model = get_model()
-                response = model.generate_content(
-                    section_prompt,
-                    generation_config=genai.types.GenerationConfig(
-                        temperature=0.7,
-                        max_output_tokens=1024,  # Reduced from 2048
-                        candidate_count=1,
-                    ),
-                    safety_settings=[
-                        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
-                    ]
-                )
-                results.append(f"### {section['header']}\n\n{safe_extract_text(response)}")
-            except Exception as e:
-                results.append(f"### {section['header']}\n\n❌ Error: {str(e)}")
-        
-        # Combine results
-        combined = "# Analysis Results (Processed in Sections)\n\n" + "\n\n---\n\n".join(results)
-        return combined
-    
-    # Normal processing for smaller files - keep prompt minimal
-    try:
-        model = get_model()
-        
-        full_prompt = f"""{prompt}
+            full_prompt = f"""{prompt}
 
 --- CONTEXT ---
 {context}
 """
+            
+            response = model.generate_content(
+                full_prompt,
+                generation_config=genai.types.GenerationConfig(
+                    temperature=0.7,
+                    max_output_tokens=1024,
+                    candidate_count=1,
+                ),
+                safety_settings=[
+                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+                ]
+            )
+            
+            return safe_extract_text(response)
         
-        response = model.generate_content(
-            full_prompt,
-            generation_config=genai.types.GenerationConfig(
-                temperature=0.7,
-                max_output_tokens=1024,  # Reduced from 2048
-                candidate_count=1,
-            ),
-            safety_settings=[
-                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
-            ]
-        )
-        
-        return safe_extract_text(response)
+        except Exception as e:
+            error_msg = str(e)
+            if "API_KEY" in error_msg or "authentication" in error_msg.lower():
+                return "❌ **Authentication Error**\n\nYour API key may be invalid or expired. Check your `.env` file."
+            elif "quota" in error_msg.lower() or "rate" in error_msg.lower():
+                return "⏸️ **Rate Limit Reached**\n\nYou've hit the API rate limit. Wait a moment and try again."
+            elif "safety" in error_msg.lower():
+                return "🛡️ **Safety Filter Triggered**\n\nThe AI declined to respond due to safety settings. Try rephrasing your Telos content."
+            else:
+                return f"❌ **Error**\n\n{error_msg}\n\nIf this persists, check your internet connection and API key."
     
-    except Exception as e:
-        error_msg = str(e)
+    # Context is too large - use chunked processing
+    st.info(f"📊 Large Telos file detected (~{estimated_tokens:,} tokens). Processing in intelligent chunks using gemini-2.5-flash...")
+    chunks = split_context_into_chunks(context, chunk_size=5000)
+    
+    all_results = []
+    
+    for i, chunk in enumerate(chunks, 1):
+        chunk_label = f"Chunk {i}/{len(chunks)}: {chunk['header']}"
+        st.caption(f"🔄 Processing {chunk_label}")
         
-        # Provide helpful error messages
-        if "API_KEY" in error_msg or "authentication" in error_msg.lower():
-            return "❌ **Authentication Error**\n\nYour API key may be invalid or expired. Check your `.env` file."
-        elif "quota" in error_msg.lower() or "rate" in error_msg.lower():
-            return "⏸️ **Rate Limit Reached**\n\nYou've hit the API rate limit. Wait a moment and try again."
-        elif "safety" in error_msg.lower():
-            return "🛡️ **Safety Filter Triggered**\n\nThe AI declined to respond due to safety settings. Try rephrasing your Telos content."
+        # Build chunk-specific prompt with continuity
+        if len(chunks) > 1:
+            chunk_prompt = f"""{prompt}
+
+**Note:** This is part {i} of {len(chunks)} of the analysis.
+
+--- CONTEXT CHUNK {i}/{len(chunks)} ---
+{chunk['header']}
+
+{chunk['content']}
+---
+
+Please analyze this chunk in context of the overall Telos. For the first chunk, provide an initial assessment. For subsequent chunks, build upon the previous analysis and identify additional insights.
+"""
         else:
-            return f"❌ **Error**\n\n{error_msg}\n\nIf this persists, check your internet connection and API key."
+            chunk_prompt = f"""{prompt}
+
+--- CONTEXT ---
+{chunk['content']}
+"""
+        
+        try:
+            model = get_model()
+            response = model.generate_content(
+                chunk_prompt,
+                generation_config=genai.types.GenerationConfig(
+                    temperature=0.7,
+                    max_output_tokens=1024,
+                    candidate_count=1,
+                ),
+                safety_settings=[
+                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+                ]
+            )
+            
+            result_text = safe_extract_text(response)
+            all_results.append(f"### {chunk_label}\n\n{result_text}")
+            
+        except Exception as e:
+            all_results.append(f"### {chunk_label}\n\n❌ Error processing chunk: {str(e)}")
+    
+    # Combine all chunk results
+    if len(chunks) > 1:
+        combined = "# Analysis (Processed in Chunks)\n\n" + "\n\n---\n\n".join(all_results)
+        st.success(f"✓ Chunked analysis complete across {len(chunks)} segments")
+    else:
+        combined = "\n\n---\n\n".join(all_results)
+    
+    return combined
 
 
 def get_therapist_chat_response(personality: str, user_message: str, telos_context: str, conversation_history: list) -> str:

@@ -1,6 +1,6 @@
 # Troubleshooting Guide
 
-## MAX_TOKENS Error
+## MAX_TOKENS Error & Large File Handling
 
 If you see an error like:
 ```
@@ -10,61 +10,67 @@ the response to contain a valid Part, but none were returned. The candidate's fi
 
 This means the AI response exceeded the maximum token limit (8,192 tokens for gemini-2.5-flash).
 
-### Solutions
+### How It's Automatically Fixed ✅
 
-#### 1. Use a Model with Higher Limits (Recommended)
+The app now uses **intelligent chunked processing**:
+- Large Telos files are automatically split into logical sections (at `##` boundaries)
+- Each chunk is processed separately with `gemini-2.5-flash`
+- Results are intelligently combined to provide comprehensive analysis
+- No response truncation because tokens are managed per-chunk
 
-Edit your `.env` file and change the model:
+### What You'll See
+
+When processing a large file:
+1. A message: "📊 Large Telos file detected. Processing in intelligent chunks..."
+2. Progress indicators showing chunk processing
+3. Results combined from all chunks into one comprehensive analysis
+
+### If You Still Experience Issues
+
+#### 1. Reduce Telos File Size (Optional)
+
+While the chunking handles large files, you can optimize further:
+- Split into multiple files (e.g., `telos-current.md`, `telos-archive.md`)
+- Remove very old journal entries
+- Keep only the most relevant information
+
+#### 2. Try a Different Analysis Pattern
+
+Some patterns generate longer responses than others:
+- Try "Summarize" first (generates shorter output)
+- Build up to more complex patterns
+- Avoid running "Run ALL patterns" on first use
+
+#### 3. Check Your API Setup
 
 ```env
-# For higher token limits (up to 32K output tokens)
-GEMINI_MODEL=gemini-1.5-pro
-
-# Or for a faster option with moderate limits
-GEMINI_MODEL=gemini-1.5-flash
+# Your .env should have:
+GEMINI_API_KEY=your_actual_api_key_here
+GEMINI_MODEL=gemini-2.5-flash  # Do not change this
+TELOS_FOLDER=telos
 ```
 
-**Model Comparison:**
-- `gemini-2.5-flash`: Fast, 8K output token limit (current default)
-- `gemini-1.5-flash`: Fast, 8K output token limit
-- `gemini-1.5-pro`: Slower but more capable, 32K output token limit
+#### 4. Verify Connection & API Key
 
-#### 2. Shorten Your Telos File
-
-If your Telos file is very long, consider:
-- Splitting it into multiple smaller files (e.g., `telos-current.md`, `telos-archive.md`)
-- Removing old journal entries
-- Keeping only the most relevant information
-
-#### 3. Use Different Analysis Patterns
-
-Some patterns generate longer responses than others. If one pattern fails:
-- Try a different pattern that's more focused
-- Avoid running "Run ALL patterns" on very large files
-
-#### 4. Check the Partial Response
-
-The app now handles truncated responses better. Even if the response is cut off, you'll see:
-- Any partial content that was generated
-- A clear message explaining the truncation
-- Suggestions for how to fix it
+1. Check your API key is valid and active
+2. Verify you have internet connection
+3. Ensure you have API quota remaining
+4. Try a simple analysis pattern to test connectivity
 
 ### Technical Details
 
-The error occurs when:
-1. The AI generates a response longer than `max_output_tokens` (8,192)
-2. The response is truncated mid-generation
-3. Sometimes no content is returned at all (finish_reason = 2 or MAX_TOKENS)
-
 The app now:
-- Handles both numeric (2) and string ('MAX_TOKENS') finish reasons
-- Returns partial content when available
-- Provides helpful error messages with solutions
-- Includes relaxed safety settings to avoid false positives
+- ✅ Automatically splits large files into chunks at section boundaries (`##` headers)
+- ✅ Processes each chunk with conservative token limits (1024 max_output_tokens per chunk)
+- ✅ Uses `gemini-2.5-flash` exclusively (no model fallbacks)
+- ✅ Handles partial responses gracefully with helpful error messages
+- ✅ Relaxed safety settings to avoid false positives
+- ✅ Provides clear continuity context between chunks for coherent analysis
 
-### Still Having Issues?
+### Why No Model Fallback?
 
-1. Check your API key is valid in `.env`
-2. Verify you have internet connection
-3. Try a simpler analysis pattern first
-4. Consider upgrading to gemini-1.5-pro for complex analyses
+`gemini-2.5-flash` is:
+- ⚡ Faster for interactive use
+- 🎯 Purpose-built for our use case
+- 💰 More cost-effective
+- 📊 Intelligent chunking ensures complete analysis
