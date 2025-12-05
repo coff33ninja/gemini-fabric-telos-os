@@ -493,7 +493,7 @@ def get_all_outputs():
                 else:
                     source_name = name_without_ext
                     timestamp = datetime.fromtimestamp(os.path.getmtime(filepath))
-            except Exception as e:
+            except Exception:
                 # Fallback: use whole filename as source
                 source_name = filename.replace('.md', '')
                 timestamp = datetime.fromtimestamp(os.path.getmtime(filepath))
@@ -1630,6 +1630,108 @@ Add a Goals section to your Telos file like this:
             for i, pattern in enumerate(progress_data['patterns_used']):
                 with cols[i % 4]:
                     st.caption(f"✓ {pattern.replace('_', ' ').title()}")
+
+elif tab_mode == "💬 Personal Therapist":
+    # Therapist chat mode
+    st.title("💬 Personal Therapist")
+    st.markdown("Have an ongoing conversation with an AI therapist who knows your Telos and remembers our chats.")
+    
+    # Load telos context
+    telos_content = load_file(selected_therapist_file)
+    if not telos_content:
+        st.error("Could not load Telos file")
+        st.stop()
+    
+    st.markdown("---")
+    
+    # Display current personality
+    col1, col2, col3 = st.columns([2, 2, 1])
+    with col1:
+        st.caption(f"📄 **File:** {os.path.basename(selected_therapist_file)}")
+    with col2:
+        st.caption(f"🎭 **Personality:** {selected_therapist_personality}")
+    with col3:
+        st.caption(f"💬 **Messages:** {len(st.session_state.therapist_messages)}")
+    
+    st.markdown("---")
+    
+    # Display conversation history
+    st.subheader("💬 Conversation")
+    
+    if not st.session_state.therapist_messages:
+        st.info("👋 Start a conversation! Ask me anything about your life, goals, or challenges.")
+    else:
+        # Display messages
+        for msg in st.session_state.therapist_messages:
+            if msg['role'] == "user":
+                with st.chat_message("user"):
+                    st.markdown(msg['content'])
+            else:
+                with st.chat_message("assistant"):
+                    st.markdown(msg['content'])
+    
+    st.markdown("---")
+    
+    # Input area
+    st.subheader("Your Message")
+    user_input = st.text_area(
+        "What's on your mind?",
+        placeholder="Share your thoughts, challenges, or ask for advice...",
+        height=100,
+        label_visibility="collapsed",
+        key="therapist_input"
+    )
+    
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        send_button = st.button("Send", use_container_width=True, type="primary")
+    with col2:
+        st.caption("")  # Spacing
+    
+    # Handle message sending
+    if send_button and user_input.strip():
+        # Add user message to history
+        st.session_state.therapist_messages.append({
+            "role": "user",
+            "content": user_input
+        })
+        
+        # Update tokens
+        st.session_state.therapist_tokens += estimate_tokens(user_input)
+        
+        # Get therapist response
+        with st.spinner("🤖 Thinking..."):
+            response = get_therapist_chat_response(
+                selected_therapist_personality,
+                user_input,
+                telos_content,
+                st.session_state.therapist_messages
+            )
+        
+        # Add therapist response
+        st.session_state.therapist_messages.append({
+            "role": "assistant",
+            "content": response
+        })
+        
+        # Update tokens
+        st.session_state.therapist_tokens += estimate_tokens(response)
+        
+        # Rerun to show new messages and clear input
+        st.rerun()
+    
+    # Save conversation if triggered
+    if st.session_state.get('save_conversation_trigger'):
+        if st.session_state.therapist_messages:
+            filepath = save_therapist_conversation(
+                selected_therapist_personality,
+                selected_therapist_file,
+                st.session_state.therapist_messages,
+                st.session_state.therapist_tokens
+            )
+            st.success(f"✅ Conversation saved to `{os.path.basename(filepath)}`")
+            st.session_state.save_conversation_trigger = False
+        st.rerun()
 
 # Footer
 st.markdown("---")
