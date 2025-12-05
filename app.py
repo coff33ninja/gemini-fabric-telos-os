@@ -348,6 +348,90 @@ def get_gemini_response(prompt: str, context: str) -> str:
             return f"❌ **Error**\n\n{error_msg}\n\nIf this persists, check your internet connection and API key."
 
 
+def get_therapist_chat_response(personality: str, user_message: str, telos_context: str, conversation_history: list) -> str:
+    """Get therapist response with personality and context awareness."""
+    # Get personality prompt from pattern
+    personality_key = personality.lower().replace("🧠 ", "").replace("🔥 ", "").replace("💼 ", "").replace("🧘 ", "").replace("💪 ", "").replace("🎯 ", "").replace(" ", "_")
+    
+    # Map personality to pattern prompt
+    personality_prompts = {
+        "compassionate_therapist": PATTERNS.get("therapist", ""),
+        "red_team": PATTERNS.get("red_team", ""),
+        "career_coach": PATTERNS.get("career_coach", ""),
+        "stoic_mentor": PATTERNS.get("stoic_mentor", ""),
+        "accountability_partner": PATTERNS.get("accountability_partner", ""),
+        "strategic_advisor": PATTERNS.get("systems_thinker", ""),
+    }
+    
+    personality_prompt = personality_prompts.get(personality_key, PATTERNS.get("therapist", ""))
+    
+    # Build conversation context (last 10 messages)
+    conversation_text = ""
+    for msg in conversation_history[-10:]:
+        role = "You" if msg['role'] == "user" else "Therapist"
+        conversation_text += f"{role}: {msg['content']}\n\n"
+    
+    # Build full prompt
+    full_prompt = f"""{personality_prompt}
+
+--- USER'S TELOS (LIFE CONTEXT) ---
+{telos_context}
+
+--- CONVERSATION HISTORY ---
+{conversation_text}
+
+--- USER'S MESSAGE ---
+{user_message}
+
+Respond as a compassionate, wise guide. Reference their Telos when relevant. Be empathetic but direct."""
+    
+    try:
+        model = get_model()
+        response = model.generate_content(
+            full_prompt,
+            generation_config=genai.types.GenerationConfig(
+                temperature=0.8,
+                max_output_tokens=1024,
+                candidate_count=1,
+            ),
+            safety_settings=[
+                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+            ]
+        )
+        return safe_extract_text(response)
+    except Exception as e:
+        return f"❌ Error: {str(e)}"
+
+
+def save_therapist_conversation(personality: str, source_file: str, messages: list, tokens: int) -> str:
+    """Save therapist conversation to file."""
+    output_dir = "outputs"
+    conv_dir = os.path.join(output_dir, "conversations")
+    Path(conv_dir).mkdir(parents=True, exist_ok=True)
+    
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    source_name = os.path.splitext(os.path.basename(source_file))[0]
+    personality_safe = personality.lower().replace(" ", "_").replace("🧠", "").replace("🔥", "").replace("💼", "").replace("🧘", "").replace("💪", "").replace("🎯", "").strip()
+    filename = f"{source_name}_{personality_safe}_{timestamp}.md"
+    filepath = os.path.join(conv_dir, filename)
+    
+    with open(filepath, "w", encoding="utf-8") as f:
+        f.write(f"# 💬 Therapy Session - {personality}\n\n")
+        f.write(f"**Telos File:** `{os.path.basename(source_file)}`\n")
+        f.write(f"**Date:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.write(f"**Messages:** {len(messages)}\n")
+        f.write(f"**Tokens:** ~{tokens:,}\n\n")
+        f.write("---\n\n")
+        
+        for msg in messages:
+            role = "**You**" if msg['role'] == "user" else f"**{personality}**"
+            f.write(f"{role}:\n\n{msg['content']}\n\n---\n\n")
+    
+    return filepath
+
 def save_output(pattern: str, source_file: str, output: str) -> str:
     """Save output to file."""
     output_dir = "outputs"
@@ -718,7 +802,7 @@ with st.sidebar:
     # Tab selection
     tab_mode = st.radio(
         "Mode:", 
-        ["📊 Analyze", "✍️ Create New File", "📚 View Outputs", "🔍 Search", "📈 Analytics", "🎯 Goal Tracker"],
+        ["📊 Analyze", "✍️ Create New File", "📚 View Outputs", "🔍 Search", "📈 Analytics", "🎯 Goal Tracker", "💬 Personal Therapist"],
         label_visibility="collapsed"
     )
     
@@ -876,13 +960,63 @@ with st.sidebar:
         create_button = False
     
     else:
-        # Search, Analytics, or Goal Tracker modes
+        # Search, Analytics, Goal Tracker, or Therapist modes
         # Set defaults
         run_button = False
         run_all = False
         selected_file = None
         selected_pattern = None
         create_button = False
+    
+    if tab_mode == "💬 Personal Therapist":
+        # Therapist sidebar config
+        st.subheader("💬 Therapist Setup")
+        
+        md_files = find_markdown_files(TELOS_FOLDER)
+        if not md_files:
+            st.warning("No Telos files found.")
+            st.info("Create a file first to use the therapist.")
+            st.stop()
+        
+        # File selection
+        file_names = [os.path.basename(f) for f in md_files]
+        selected_therapist_file_name = st.selectbox("Select your Telos:", file_names, key="therapist_file")
+        selected_therapist_file = md_files[file_names.index(selected_therapist_file_name)]
+        
+        # Personality selection from patterns
+        st.subheader("🎭 Choose Personality")
+        therapist_personalities = ["🧠 Compassionate Therapist", "🔥 Red Team", "💼 Career Coach", "🧘 Stoic Mentor", "💪 Accountability Partner", "🎯 Strategic Advisor"]
+        selected_therapist_personality = st.selectbox("Personality:", therapist_personalities, key="therapist_personality")
+        
+        # Conversation management
+        st.markdown("---")
+        st.subheader("💬 Conversation")
+        
+        # Initialize session state for therapist
+        if 'therapist_messages' not in st.session_state:
+            st.session_state.therapist_messages = []
+        if 'therapist_tokens' not in st.session_state:
+            st.session_state.therapist_tokens = 0
+        
+        # Display message count
+        st.caption(f"📝 Messages: {len(st.session_state.therapist_messages)}")
+        st.caption(f"📊 Tokens: ~{st.session_state.therapist_tokens:,}")
+        
+        # Clear conversation button
+        if st.button("🔄 Clear Conversation", use_container_width=True):
+            st.session_state.therapist_messages = []
+            st.session_state.therapist_tokens = 0
+            st.success("Conversation cleared!")
+            st.rerun()
+        
+        # Save conversation button
+        if st.button("💾 Save Conversation", use_container_width=True):
+            if st.session_state.therapist_messages:
+                # Save logic will be in main content area
+                st.session_state.save_conversation_trigger = True
+            else:
+                st.info("No messages to save.")
+
 
 # Main content
 if tab_mode == "✍️ Create New File":
