@@ -51,7 +51,7 @@ Create a `.env` file with your Gemini API key (or copy from `.env.example`):
 
 ```
 GEMINI_API_KEY=your_api_key_here
-GEMINI_MODEL=gemini-1.5-pro
+GEMINI_MODEL=gemini-2.5-flash
 TELOS_FOLDER=telos
 ```
 
@@ -185,7 +185,7 @@ Check the **"🔥 Run ALL patterns"** checkbox to run all 20+ patterns on your f
 
 ## 🛠️ Troubleshooting
 
-See [docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md) for common issues and solutions.
+See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for common issues and solutions.
 
 ## 🎨 Future Ideas
 
@@ -210,7 +210,7 @@ This is cybernetic self-engineering. Track your evolution. Optimize your existen
 
 ## 🤝 Contributing
 
-Contributions are welcome! See [docs/CONTRIBUTING.md](./docs/CONTRIBUTING.md) for guidelines.
+Contributions are welcome! See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 
 ## 📄 License
 
