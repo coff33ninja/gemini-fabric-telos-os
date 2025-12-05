@@ -9,7 +9,23 @@
 
 AI-powered life context analyzer using Google Gemini. Analyze, track, and evolve your Telos files with 20+ expert AI personas through a beautiful web interface.
 
-![Telos OS Screenshot](https://via.placeholder.com/800x400/1a1a2e/eee?text=Telos+OS+Dashboard)
+---
+
+## 📚 Documentation Hub
+
+**→ [Full Documentation in docs/ folder](./docs/INDEX.md) ←**
+
+All documentation has been moved to `docs/` to keep the root clean.
+
+| Quick Links | Purpose |
+|-------------|---------|
+| **[docs/README.md](./docs/README.md)** | Full project documentation |
+| **[docs/INSTALLATION.md](./docs/INSTALLATION.md)** | Detailed setup guide |
+| **[docs/FEATURES.md](./docs/FEATURES.md)** | All 20+ analysis patterns |
+| **[docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md)** | Solutions to common issues |
+| **[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)** | System design & code structure |
+| **[docs/CHUNKING.md](./docs/CHUNKING.md)** | How intelligent chunking works |
+| **[docs/CONTRIBUTING.md](./docs/CONTRIBUTING.md)** | Contributing guidelines |
 
 ---
 
@@ -183,9 +199,13 @@ Check the **"🔥 Run ALL patterns"** checkbox to run all 20+ patterns on your f
 5. Download, copy, or delete individual analyses
 6. Use bulk actions to manage all analyses for a file
 
-## 🛠️ Troubleshooting
+## 🛠️ Need Help?
 
-See [docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md) for common issues and solutions.
+See the comprehensive documentation in the `docs/` folder:
+- **Issues?** → [docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md)
+- **Setup help?** → [docs/INSTALLATION.md](./docs/INSTALLATION.md)
+- **Contributing?** → [docs/CONTRIBUTING.md](./docs/CONTRIBUTING.md)
+- **Full docs?** → [docs/INDEX.md](./docs/INDEX.md)
 
 ## 🎨 Future Ideas
 
