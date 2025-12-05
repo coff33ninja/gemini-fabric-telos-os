@@ -253,17 +253,17 @@ def split_telos_by_sections(content: str) -> list:
 
 
 def estimate_tokens(text: str) -> int:
-    """Rough estimate of tokens (1 token ≈ 4 characters)."""
-    return len(text) // 4
+    """Rough estimate of tokens (1 token ≈ 4 characters, conservative)."""
+    return len(text) // 3  # More conservative: 1 token per 3 chars
 
 
 def get_gemini_response(prompt: str, context: str) -> str:
     """Get response from Gemini with robust error handling and automatic splitting for large files."""
     print("🚨 DEBUG: get_gemini_response() called - AI API call happening!")
     
-    # Check if context is too large (rough estimate: 30K tokens = 120K chars for input)
+    # Check if context is too large (practical limit for gemini-2.5-flash)
     estimated_tokens = estimate_tokens(context)
-    max_input_tokens = 30000  # Conservative limit for gemini-1.5-pro
+    max_input_tokens = 10000  # Conservative limit to avoid truncation
     
     if estimated_tokens > max_input_tokens:
         # Split by sections and analyze separately
@@ -274,13 +274,20 @@ def get_gemini_response(prompt: str, context: str) -> str:
         for i, section in enumerate(sections, 1):
             st.caption(f"Analyzing section {i}/{len(sections)}: {section['header']}")
             
+            # Trim section if still too large
+            section_content = section['content']
+            section_tokens = estimate_tokens(section_content)
+            if section_tokens > 8000:
+                # Keep only first 8000 tokens worth
+                section_content = section_content[:24000]  # ~8000 tokens
+            
             section_prompt = f"""
 {prompt}
 
 **Note:** This is section {i} of {len(sections)} from a larger Telos document.
 
 --- SECTION CONTENT ---
-{section['content']}
+{section_content}
 """
             try:
                 model = get_model()
@@ -288,7 +295,7 @@ def get_gemini_response(prompt: str, context: str) -> str:
                     section_prompt,
                     generation_config=genai.types.GenerationConfig(
                         temperature=0.7,
-                        max_output_tokens=4096,
+                        max_output_tokens=2048,  # Reduced from 4096
                         candidate_count=1,
                     ),
                     safety_settings=[
@@ -321,7 +328,7 @@ def get_gemini_response(prompt: str, context: str) -> str:
             full_prompt,
             generation_config=genai.types.GenerationConfig(
                 temperature=0.7,
-                max_output_tokens=8192,
+                max_output_tokens=2048,  # Reduced from 8192
                 candidate_count=1,
             ),
             safety_settings=[
@@ -365,35 +372,38 @@ def get_therapist_chat_response(personality: str, user_message: str, telos_conte
     
     personality_prompt = personality_prompts.get(personality_key, PATTERNS.get("therapist", ""))
     
-    # Build conversation context (last 10 messages)
+    # Build conversation context (last 5 messages to save tokens)
     conversation_text = ""
-    for msg in conversation_history[-10:]:
+    for msg in conversation_history[-5:]:
         role = "You" if msg['role'] == "user" else "Therapist"
         conversation_text += f"{role}: {msg['content']}\n\n"
     
     # Estimate tokens for context
     estimated_context_tokens = estimate_tokens(telos_context)
-    max_context_tokens = 20000  # Conservative limit for therapist context
+    max_context_tokens = 5000  # Very conservative for therapist (allow room for prompt + conversation)
     
     # If context is too large, use only the most relevant sections
     if estimated_context_tokens > max_context_tokens:
         sections = split_telos_by_sections(telos_context)
-        # Use first 2-3 sections (usually Mission, Goals, Current Status)
-        telos_context = "\n\n---\n\n".join([s['content'] for s in sections[:3]])
+        # Use first 2 sections (usually Mission, Goals)
+        telos_context = "\n\n---\n\n".join([s['content'] for s in sections[:2]])
+        # Trim if still too large
+        if len(telos_context) > 15000:  # ~5000 tokens
+            telos_context = telos_context[:15000]
     
-    # Build full prompt
+    # Build full prompt - be concise
     full_prompt = f"""{personality_prompt}
 
---- USER'S TELOS (LIFE CONTEXT) ---
+--- TELOS CONTEXT ---
 {telos_context}
 
---- CONVERSATION HISTORY ---
+--- RECENT CONVERSATION ---
 {conversation_text}
 
 --- USER'S MESSAGE ---
 {user_message}
 
-Respond as a compassionate, wise guide. Reference their Telos when relevant. Be empathetic but direct."""
+Keep your response focused, empathetic, and direct. Reference their Telos when relevant."""
     
     try:
         model = get_model()
@@ -401,7 +411,7 @@ Respond as a compassionate, wise guide. Reference their Telos when relevant. Be 
             full_prompt,
             generation_config=genai.types.GenerationConfig(
                 temperature=0.8,
-                max_output_tokens=1024,
+                max_output_tokens=512,  # Reduced from 1024
                 candidate_count=1,
             ),
             safety_settings=[
