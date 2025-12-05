@@ -1,47 +1,131 @@
-# 📚 Documentation
+# 📚 Documentation Hub
 
-This folder contains comprehensive documentation for Telos OS.
+Complete documentation for **Telos OS** - Your Personal Operating System for Life.
 
-## 📖 Quick Links
+## � Start Here
 
-- **[README.md](./README.md)** - Main project documentation
-- **[FEATURES.md](./FEATURES.md)** - Detailed feature overview
-- **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** - Common issues & solutions
-- **[CONTRIBUTING.md](./CONTRIBUTING.md)** - Contribution guidelines
+| Document | Purpose |
+|----------|---------|
+| **[README.md](./README.md)** | 👈 **START HERE** - Full project overview & features |
+| **[INSTALLATION.md](./INSTALLATION.md)** | Setup guide for Windows, Mac, Linux |
+| **[FEATURES.md](./FEATURES.md)** | Complete feature breakdown |
+
+## 🎯 Using Telos OS
+
+- **[README.md](./README.md)** - How to use the app
+- **[FEATURES.md](./FEATURES.md)** - All 20+ AI analysis patterns explained
+- **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** - Solutions to common problems
+
+## 🔧 Technical Documentation
+
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - System design & code structure
+- **[CHUNKING.md](./CHUNKING.md)** - How intelligent chunking works for large files
+
+## 🤝 Contributing & Development
+
+- **[CONTRIBUTING.md](./CONTRIBUTING.md)** - How to contribute, add patterns, report bugs
+- **[INSTALLATION.md](./INSTALLATION.md)** - Development environment setup
+
+## 📖 Documentation Map
+
+```
+📚 docs/
+├── INDEX.md ........................ This file (navigation hub)
+├── README.md ........................ Main documentation
+├── INSTALLATION.md ................. Setup & installation
+├── FEATURES.md ..................... Feature overview
+├── TROUBLESHOOTING.md .............. Common issues & solutions
+├── ARCHITECTURE.md ................. System design
+├── CHUNKING.md ..................... Token & chunking system
+└── CONTRIBUTING.md ................. Contributing guidelines
+```
+
+## ❓ Quick Reference
+
+**Q: How do I install?**  
+A: See [INSTALLATION.md](./INSTALLATION.md)
+
+**Q: What can the app do?**  
+A: See [FEATURES.md](./FEATURES.md) - 20+ AI personas included!
+
+**Q: Something isn't working**  
+A: Check [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
+
+**Q: How does chunking work?**  
+A: See [CHUNKING.md](./CHUNKING.md) - intelligent processing for large files
+
+**Q: I want to contribute**  
+A: See [CONTRIBUTING.md](./CONTRIBUTING.md)
+
+**Q: How is it built?**  
+A: See [ARCHITECTURE.md](./ARCHITECTURE.md)
 
 ## 🎯 What is Telos OS?
 
-Telos OS is your **Personal Operating System for Life** - an AI-powered self-analysis tool that helps you understand, analyze, and evolve your life purpose and goals.
+Telos OS is your **Personal Operating System for Life** - an AI-powered self-analysis tool that helps you:
 
-## ⚡ Quick Start
+✅ Understand your purpose and goals  
+✅ Get multi-perspective analysis from 20+ AI personas  
+✅ Identify blind spots and opportunities  
+✅ Track your evolution over time  
+✅ Make better life decisions  
 
-1. Create a `.env` file with your Gemini API key
-2. Double-click `run.bat` (Windows) or run `streamlit run app.py`
-3. Create or upload a Telos file
-4. Run any of 20+ AI analysis patterns
-5. Review insights and iterate
+## ⚡ 30-Second Quick Start
 
-## 📁 Main Features
+```bash
+# 1. Get API key from Google AI Studio
+# 2. Create .env with your key
+GEMINI_API_KEY=your_key_here
 
-✅ 20+ AI personas for multi-perspective analysis
-✅ Smart Telos file editing with AI writing assistance
-✅ Batch processing with progress tracking
-✅ Version history and management
-✅ Beautiful Streamlit web interface
-✅ Intelligent chunked processing for large files
+# 3. Run (Windows)
+run.bat
 
-## 🚀 Getting Started
+# Or manual
+streamlit run app.py
 
-See [README.md](./README.md) for installation and usage instructions.
+# 4. Visit http://localhost:8501
+```
 
-## 🆘 Need Help?
+See [INSTALLATION.md](./INSTALLATION.md) for detailed setup.
 
-Check [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for common issues.
+## 🌟 Key Features
+
+- 🎯 **20+ AI Personas** - Red Team, Career Coach, Therapist, Stoic Mentor, etc.
+- 📝 **AI Writing Assistant** - Get help writing better Telos files
+- 📊 **Batch Analysis** - Run all patterns at once
+- 💾 **Version History** - Track all analyses over time
+- 🧠 **Intelligent Chunking** - Handle large files without errors
+- 🎨 **Beautiful UI** - Clean Streamlit interface
+
+## 📚 Full Documentation
+
+| Category | Documents |
+|----------|-----------|
+| **Getting Started** | [README.md](./README.md), [INSTALLATION.md](./INSTALLATION.md) |
+| **Features & Usage** | [FEATURES.md](./FEATURES.md), [README.md](./README.md) |
+| **Troubleshooting** | [TROUBLESHOOTING.md](./TROUBLESHOOTING.md), [CHUNKING.md](./CHUNKING.md) |
+| **Development** | [CONTRIBUTING.md](./CONTRIBUTING.md), [ARCHITECTURE.md](./ARCHITECTURE.md) |
+
+## 🆘 Getting Help
+
+1. **Check the relevant doc** - See the Quick Reference above
+2. **Search troubleshooting** - [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
+3. **Report an issue** - GitHub Issues
+4. **Ask a question** - GitHub Discussions
 
 ## 🤝 Contributing
 
-Want to help improve Telos OS? See [CONTRIBUTING.md](./CONTRIBUTING.md).
+Want to help? We'd love contributions!
+
+- Add new AI patterns
+- Improve documentation  
+- Report bugs
+- Suggest features
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
 
 ---
 
-**Built with ❤️ by the community** | [GitHub](https://github.com/coff33ninja/gemini-fabric-telos-os)
+**Built with ❤️ by the community**
+
+[⭐ Star on GitHub](https://github.com/coff33ninja/gemini-fabric-telos-os) | [🐛 Report Bug](https://github.com/coff33ninja/gemini-fabric-telos-os/issues) | [💡 Request Feature](https://github.com/coff33ninja/gemini-fabric-telos-os/issues)
