@@ -261,9 +261,15 @@ def get_gemini_response(prompt: str, context: str) -> str:
     """Get response from Gemini with robust error handling and automatic splitting for large files."""
     print("🚨 DEBUG: get_gemini_response() called - AI API call happening!")
     
-    # Check if context is too large (practical limit for gemini-2.5-flash)
+    # ALWAYS trim context aggressively to avoid truncation
+    # Max context size: 8000 chars (~2667 tokens)
+    max_context_chars = 8000
+    if len(context) > max_context_chars:
+        context = context[:max_context_chars] + "\n\n[...content trimmed due to length...]"
+    
+    # Check if context is too large for splitting approach
     estimated_tokens = estimate_tokens(context)
-    max_input_tokens = 10000  # Conservative limit to avoid truncation
+    max_input_tokens = 8000  # Even more conservative
     
     if estimated_tokens > max_input_tokens:
         # Split by sections and analyze separately
@@ -274,19 +280,15 @@ def get_gemini_response(prompt: str, context: str) -> str:
         for i, section in enumerate(sections, 1):
             st.caption(f"Analyzing section {i}/{len(sections)}: {section['header']}")
             
-            # Trim section if still too large
+            # Aggressively trim each section
             section_content = section['content']
-            section_tokens = estimate_tokens(section_content)
-            if section_tokens > 8000:
-                # Keep only first 8000 tokens worth
-                section_content = section_content[:24000]  # ~8000 tokens
+            if len(section_content) > 6000:
+                section_content = section_content[:6000] + "\n\n[...trimmed...]"
             
-            section_prompt = f"""
-{prompt}
+            section_prompt = f"""{prompt}
 
-**Note:** This is section {i} of {len(sections)} from a larger Telos document.
+**Note:** Section {i}/{len(sections)}
 
---- SECTION CONTENT ---
 {section_content}
 """
             try:
@@ -295,7 +297,7 @@ def get_gemini_response(prompt: str, context: str) -> str:
                     section_prompt,
                     generation_config=genai.types.GenerationConfig(
                         temperature=0.7,
-                        max_output_tokens=2048,  # Reduced from 4096
+                        max_output_tokens=1024,  # Reduced from 2048
                         candidate_count=1,
                     ),
                     safety_settings=[
@@ -313,14 +315,13 @@ def get_gemini_response(prompt: str, context: str) -> str:
         combined = "# Analysis Results (Processed in Sections)\n\n" + "\n\n---\n\n".join(results)
         return combined
     
-    # Normal processing for smaller files
+    # Normal processing for smaller files - keep prompt minimal
     try:
         model = get_model()
         
-        full_prompt = f"""
-{prompt}
+        full_prompt = f"""{prompt}
 
---- USER CONTEXT (TELOS FILE) ---
+--- CONTEXT ---
 {context}
 """
         
@@ -328,7 +329,7 @@ def get_gemini_response(prompt: str, context: str) -> str:
             full_prompt,
             generation_config=genai.types.GenerationConfig(
                 temperature=0.7,
-                max_output_tokens=2048,  # Reduced from 8192
+                max_output_tokens=1024,  # Reduced from 2048
                 candidate_count=1,
             ),
             safety_settings=[
@@ -356,7 +357,7 @@ def get_gemini_response(prompt: str, context: str) -> str:
 
 
 def get_therapist_chat_response(personality: str, user_message: str, telos_context: str, conversation_history: list) -> str:
-    """Get therapist response with personality and context awareness, with token-aware splitting for large contexts."""
+    """Get therapist response with personality and context awareness, with aggressive token management."""
     # Get personality prompt from pattern
     personality_key = personality.lower().replace("🧠 ", "").replace("🔥 ", "").replace("💼 ", "").replace("🧘 ", "").replace("💪 ", "").replace("🎯 ", "").replace(" ", "_")
     
@@ -372,38 +373,33 @@ def get_therapist_chat_response(personality: str, user_message: str, telos_conte
     
     personality_prompt = personality_prompts.get(personality_key, PATTERNS.get("therapist", ""))
     
-    # Build conversation context (last 5 messages to save tokens)
+    # Build conversation context (last 3 messages only)
     conversation_text = ""
-    for msg in conversation_history[-5:]:
+    for msg in conversation_history[-3:]:
         role = "You" if msg['role'] == "user" else "Therapist"
-        conversation_text += f"{role}: {msg['content']}\n\n"
+        conversation_text += f"{role}: {msg['content']}\n"
     
-    # Estimate tokens for context
-    estimated_context_tokens = estimate_tokens(telos_context)
-    max_context_tokens = 5000  # Very conservative for therapist (allow room for prompt + conversation)
-    
-    # If context is too large, use only the most relevant sections
-    if estimated_context_tokens > max_context_tokens:
+    # AGGRESSIVELY trim context to max 3000 chars (~1000 tokens)
+    if len(telos_context) > 3000:
+        # Try to keep key sections
         sections = split_telos_by_sections(telos_context)
-        # Use first 2 sections (usually Mission, Goals)
-        telos_context = "\n\n---\n\n".join([s['content'] for s in sections[:2]])
-        # Trim if still too large
-        if len(telos_context) > 15000:  # ~5000 tokens
-            telos_context = telos_context[:15000]
+        if len(sections) > 1:
+            # Take first section only
+            telos_context = sections[0]['content']
+        # Final trim
+        if len(telos_context) > 3000:
+            telos_context = telos_context[:3000]
     
-    # Build full prompt - be concise
+    # Build concise prompt
     full_prompt = f"""{personality_prompt}
 
---- TELOS CONTEXT ---
-{telos_context}
+Context: {telos_context}
 
---- RECENT CONVERSATION ---
-{conversation_text}
+Chat: {conversation_text}
 
---- USER'S MESSAGE ---
-{user_message}
+User: {user_message}
 
-Keep your response focused, empathetic, and direct. Reference their Telos when relevant."""
+Respond briefly and directly."""
     
     try:
         model = get_model()
@@ -411,7 +407,7 @@ Keep your response focused, empathetic, and direct. Reference their Telos when r
             full_prompt,
             generation_config=genai.types.GenerationConfig(
                 temperature=0.8,
-                max_output_tokens=512,  # Reduced from 1024
+                max_output_tokens=256,  # Very limited output
                 candidate_count=1,
             ),
             safety_settings=[
