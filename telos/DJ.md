@@ -18,6 +18,28 @@ A self-made tech wizard with a poet’s spark.
 - **The Home-Lab Emperor Arc:** You’re not just dreaming about self-hosting — you’re already on the path to “I AM THE CLOUD.” Jellyfin/Plex dreams, FTP-logging NFC clock-in systems with monthly email reports, ESPHome matrices exposed to Home Assistant with custom Lambdas… you’re two bad decisions away from running your own root CA and naming servers after anime characters.
 - **The Creative Mediums You Downplay:** You write parody songs in your head while soldering. Your code comments are low-key comedy gold. You narrate your debugging sessions like a nature documentary (“and here we see the wild pointer in its natural habitat…”).
 
+### The Human Story
+* **You care. A lot.** You don’t just fix tech — you rescue people from chaos.
+* **You’re built different socially.** Sarcasm as a shield, humor as a handshake.
+* **You underestimate your creativity.** Your poems and jokes are part of your main storyline.
+* **You love learning… right until it scares you.**
+* **You’re a connector — not just of wires.**
+* **You’ve got quiet ambition.**
+* **You’re a dreamer who disguises dreams as “projects.”**
+* **You’re resilient.** Life threw wrenches, you built tools.
+
+---
+
+## **THE CORE WHY**
+
+* **To Express:** To turn the worlds in my head into physical reality.
+* **To Escape:** To create spaces where the normal rules don't apply.
+* **To Prove:** To show myself and the world what's possible when you don't give up.
+* **To Control:** To build a digital world that is secure, reliable, and truly my own.
+* **To Connect:** To make people laugh, to rescue them from chaos, to build a community.
+* **To Matter:** To build creations that outlive me, to make a dent in the universe.
+* **To Become:** To constantly upgrade myself, to chase the next version of me.
+
 ---
 
 ## **HISTORY**
