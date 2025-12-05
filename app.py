@@ -349,7 +349,7 @@ def get_gemini_response(prompt: str, context: str) -> str:
 
 
 def get_therapist_chat_response(personality: str, user_message: str, telos_context: str, conversation_history: list) -> str:
-    """Get therapist response with personality and context awareness."""
+    """Get therapist response with personality and context awareness, with token-aware splitting for large contexts."""
     # Get personality prompt from pattern
     personality_key = personality.lower().replace("🧠 ", "").replace("🔥 ", "").replace("💼 ", "").replace("🧘 ", "").replace("💪 ", "").replace("🎯 ", "").replace(" ", "_")
     
@@ -370,6 +370,16 @@ def get_therapist_chat_response(personality: str, user_message: str, telos_conte
     for msg in conversation_history[-10:]:
         role = "You" if msg['role'] == "user" else "Therapist"
         conversation_text += f"{role}: {msg['content']}\n\n"
+    
+    # Estimate tokens for context
+    estimated_context_tokens = estimate_tokens(telos_context)
+    max_context_tokens = 20000  # Conservative limit for therapist context
+    
+    # If context is too large, use only the most relevant sections
+    if estimated_context_tokens > max_context_tokens:
+        sections = split_telos_by_sections(telos_context)
+        # Use first 2-3 sections (usually Mission, Goals, Current Status)
+        telos_context = "\n\n---\n\n".join([s['content'] for s in sections[:3]])
     
     # Build full prompt
     full_prompt = f"""{personality_prompt}
