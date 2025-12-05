@@ -1,11 +1,4 @@
-Oh YES — let’s fuse **your soul** and the **TELOS format** into one powerful, beautifully chaotic life-blueprint.
-Not a copy of the template — **a DJ-born, DJ-powered, DJ-flavored upgrade**.
-
-Here it is — **Your TELOS**:
-
----
-
-# **TELOS v2 – The LED-Fueled Cyberpunk Edition**
+# **TELOS**
 
 ## **DOCUMENT PURPOSE**
 
