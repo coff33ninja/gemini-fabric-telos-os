@@ -5,7 +5,7 @@ Here it is — **Your TELOS**:
 
 ---
 
-# **TELOS – The DJ Operating System**
+# **TELOS v2 – The LED-Fueled Cyberpunk Edition**
 
 ## **DOCUMENT PURPOSE**
 
@@ -13,6 +13,16 @@ An evolving map of a human who refuses to stay ordinary.
 A way to track curiosity, comedy, creativity, and technical chaos —
 so every project connects back to who you are becoming:
 A self-made tech wizard with a poet’s spark.
+
+---
+
+## **PERSONA: THE HARDWARE CHAOS GOBLIN**
+
+- **Hardware Chaos Goblin Energy:** You don’t just “like” LEDs… you speak fluent NeoPixel, FastLED, and WLED like it’s your native tongue. 10x20, 10x22 serpentine matrices, ESP32 + potentiometers + NFC + motorized pots + dual-ESP32 Home-Assistant-PC-control setups… you’re out here building cyberpunk props for fun. You once turned two potentiometers and a button into a fully playable Pong table and then immediately turned the same matrix into an Etch-A-Sketch. That’s not a hobby. That’s sorcery.
+- **The “IdeaGazm” Identity:** GitHub: IdeaGazm (already legendary name). You’re secretly proud that your repos are a glorious mess of RGB animations, ESPHome wizardry, Arduino FFT visualizers, and wireless DAC volume knobs that roast Windows in real time.
+- **The Audio Obsession:** MSFTIShim volume hook mastery. Building a full wireless USB DAC + rotary encoder + OLED + ARGB bling + voice control just because Windows volume mixing is criminal. You want self-turning motorized pots that physically move when Spotify changes volume. That’s next-level unhinged.
+- **The Home-Lab Emperor Arc:** You’re not just dreaming about self-hosting — you’re already on the path to “I AM THE CLOUD.” Jellyfin/Plex dreams, FTP-logging NFC clock-in systems with monthly email reports, ESPHome matrices exposed to Home Assistant with custom Lambdas… you’re two bad decisions away from running your own root CA and naming servers after anime characters.
+- **The Creative Mediums You Downplay:** You write parody songs in your head while soldering. Your code comments are low-key comedy gold. You narrate your debugging sessions like a nature documentary (“and here we see the wild pointer in its natural habitat…”).
 
 ---
 
@@ -98,6 +108,29 @@ A self-made tech wizard with a poet’s spark.
 
 ---
 
+## **SIGNATURE PROJECTS HALL OF FAME**
+* The 10x22 Pong + Etch-A-Sketch combo matrix
+* The NFC clock-in/out system with FTP + email reports
+* The scrolling “KUSANAGI” smiley face with dual rainbow chases
+* The ESP32 audio DAC that can turn your PC on and notify you when BIOS beeps
+
+---
+
+## **CATCHPHRASES**
+* “Trust me, I’m a tech therapist”
+* “This will be quick” (narrator: it was not quick)
+* “Just one more LED…”
+* “Windows moment”
+
+---
+
+## **SPIRIT ANIMALS**
+* Raccoon that learned C++
+* Gremlin with a soldering iron
+* Cyberpunk bard
+
+---
+
 ## **BEST MOVIES**
 
 (You’re gonna fill these in — we’ll make this list epic)
@@ -130,7 +163,10 @@ A self-made tech wizard with a poet’s spark.
 ## **TRAUMAS**
 
 * Printers
-  (This section is expandable if you ever want to go deeper)
+* Windows audio session enumeration
+* People who say “it works on my machine”
+* Forgetting to add `FastLED.show()` for the 4000th time
+* Running out of GPIO pins mid-project
 
 ---
 
